@@ -160,16 +160,17 @@ export function useAddCard() {
         null
       );
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Karte erfolgreich hinzugefügt');
     },
     onError: (error: Error) => {
@@ -238,16 +239,17 @@ export function useUpdateCard() {
         notes
       );
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Karte erfolgreich aktualisiert');
     },
     onError: (error: Error) => {
@@ -268,16 +270,17 @@ export function useDeleteCard() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.deleteCard(cardId);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Karte erfolgreich gelöscht');
     },
     onError: (error: Error) => {
@@ -298,11 +301,12 @@ export function useUpdateSalePrice() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.updateSalePrice(cardId, newSalePrice);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Verkaufspreis aktualisiert');
     },
     onError: (error: Error) => {
@@ -323,12 +327,13 @@ export function useMarkCardAsSold() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.markCardAsSold(cardId, salePrice, saleDate);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Karte als verkauft markiert');
     },
     onError: (error: Error) => {
@@ -349,11 +354,12 @@ export function useRecordTradeTransaction() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.recordTradeTransaction(givenCardIds, receivedCardIds);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Tausch erfolgreich aufgezeichnet');
     },
     onError: (error: Error) => {
@@ -374,11 +380,12 @@ export function useRevertTradeTransaction() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.revertTradeTransaction(cardIds);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      await queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
+    onSuccess: () => {
+      // Trigger invalidations in background without blocking
+      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Tausch erfolgreich rückgängig gemacht');
     },
     onError: (error: Error) => {
@@ -503,12 +510,7 @@ export function useGetSoldCardBalance() {
     queryFn: async () => {
       if (!actor) return 0;
       if (!identity) return 0;
-      try {
-        return await actor.getSoldCardBalance();
-      } catch (error) {
-        console.error('Error fetching sold card balance:', error);
-        return 0;
-      }
+      return actor.getSoldCardBalance();
     },
     enabled: !!actor && !isFetching && !!identity,
   });

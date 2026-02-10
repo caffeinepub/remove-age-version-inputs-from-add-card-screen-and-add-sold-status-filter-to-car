@@ -1,54 +1,71 @@
 {
   "kind": "build_request",
-  "title": "Fix sold-card balance to exclude Essence purchase costs and display sold purchase total",
+  "title": "Remove Age/Version inputs from card editor and speed up save/sell actions",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Update the backend sold-card balance calculation so that sold cards crafted/bought with the payment method `essence` do not subtract any purchase cost from the sold-card balance (i.e., treat their purchase cost as 0 in the sold-card balance calculation).",
-      "target": "backend",
+      "text": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-6"
         ],
         "quotes": [
-          "Karten die mit Essence gecraftet wurden sollen nur mit dem Verkaufspreis gewertet werden in der Verkaufsbilanz. Momentan wird der Kaufpreis mit Essence noch in die Rechnung mitinbegriffen, aber das soll nicht so sein."
+          "Wenn man eine Karte bearbeitet, soll dort auch nicht mehr „Version“ und „Alter“ als Eingabefeld geben."
         ]
       },
       "acceptanceCriteria": [
-        "Calling `getSoldCardBalance()` for a user only subtracts discounted purchase costs for sold cards whose payment method is not `essence`.",
-        "For sold cards with payment method `essence`, `getSoldCardBalance()` includes the sale price but subtracts 0 purchase cost.",
-        "Existing behavior for non-Essence sold cards (cash/eth) remains unchanged, including discountPercent handling."
+        "In the card edit dialog, there are no visible input controls labeled \"Age\" or \"Version\".",
+        "The Save/Submit button validation does not depend on \"Age\" or \"Version\" being present or filled.",
+        "Saving an edited card keeps the existing stored values for age and version unchanged (i.e., those properties are not cleared or overwritten unintentionally)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the \"Sold cards balance\" UI section (\"Bilanz verkaufter Karten\"), display an additional summary metric labeled \"Purchase total\" positioned to the left of the existing \"Sale proceeds\" metric, showing the sum of discounted purchase prices of all sold cards excluding any cards with payment method `essence` (Essence contributes 0 to this purchase total).",
+      "text": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-8"
+          "msg-6"
         ],
         "quotes": [
-          "Bei „Bilanz verkaufter Karten“ sollen links neben „Verkaufserlöse“ noch „Kaufpreis“ stehen, bei dem die Summe der Kaufpreise der verkauften Karten steht."
+          "Und wenn man Karte bearbeitet und dann speichert, dauert das Speichern sehr lange."
         ]
       },
       "acceptanceCriteria": [
-        "The \"Bilanz verkaufter Karten\" summary grid shows a new tile/row item labeled \"Purchase total\" placed immediately before (to the left of) the \"Sale proceeds\" tile on desktop layouts.",
-        "\"Purchase total\" equals the sum over sold cards of `purchasePrice * (1 - discountPercent/100)` for non-Essence payment methods; sold cards with payment method `essence` contribute 0.",
-        "The displayed purchase total is formatted as a euro amount with 2 decimals (e.g., €12.34).",
-        "The sold-card balance value shown continues to match the backend `getSoldCardBalance()` result after REQ-1 is implemented."
+        "After a successful update response from the backend, the edit dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
+        "Required data refreshes still happen in the background so the cards list/portfolio metrics update shortly after saving.",
+        "No duplicate toasts or repeated refetch loops are introduced."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-6"
+        ],
+        "quotes": [
+          "Das gleiche bei „Verkaufen“ der Karte. Kann man das schneller machen?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After a successful \"mark as sold\" response from the backend, the sell dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
+        "The cards list and relevant portfolio/sold-card views update shortly after selling without requiring a manual refresh.",
+        "No regression in error handling (errors still show toasts and leave the dialog open)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
-    "Do not edit frontend files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT."
+    "Do not edit any files under frontend/src/components/ui or any path listed in frontend.immutablePaths.",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add migration code if state schema changes (not expected for this request)."
   ],
   "nonGoals": [
-    "Changing how overall portfolio totals (e.g., total invested across all cards) are calculated.",
-    "Adding new filters or additional analytics beyond the requested purchase-total display and Essence exclusion rule.",
-    "Changing the sold/trade transaction list presentation beyond what is necessary to support the requested totals."
+    "Do not remove the underlying age/version fields from the backend data model or existing stored cards.",
+    "Do not redesign the sell/trade flow or change the trade feature behavior beyond performance improvements for selling.",
+    "Do not introduce new authentication providers (Internet Identity remains the only auth)."
   ],
   "imageRequirements": {
     "required": [],

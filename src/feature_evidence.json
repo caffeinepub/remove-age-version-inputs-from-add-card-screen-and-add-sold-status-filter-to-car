@@ -2,10 +2,32 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-sold-cards-balance-ui-section-bilanz-verkaufter-karten-display-an-additional-summary-metric-labeled-purchase-total-positioned-to-the-left-of-the-existing-sale-proceeds-metric-showing-the-sum-of-discounted-purchase-prices-of-all-sold-cards-excluding-any-cards-with-payment-method-essence-essence-contributes-0-to-this-purchase-total",
-      "featureTitle": "In the \"Sold cards balance\" UI section (\"Bilanz verkaufter Karten\"), display an additional summary metric labeled \"Purchase total\" positioned to the left of the existing \"Sale proceeds\" metric, showing the sum of discounted purchase prices of all sold cards excluding any cards with payment method `essence` (Essence contributes 0 to this purchase total).",
+      "featureId": "feature-remove-the-age-and-version-input-fields-from-the-card-edit-dialog-ui-and-ensure-editing-a-card-no-longer-requires-the-user-to-enter-or-validate-those-fields",
+      "featureTitle": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
       "files": [
-        "frontend/src/pages/PortfolioPage.tsx"
+        "frontend/src/components/EditCardDialog.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-perceived-performance-for-save-after-editing-a-card-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
+      "featureTitle": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "files": [
+        "frontend/src/components/EditCardDialog.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,6 +41,27 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-perceived-performance-for-sell-mark-card-as-sold-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
+      "featureTitle": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

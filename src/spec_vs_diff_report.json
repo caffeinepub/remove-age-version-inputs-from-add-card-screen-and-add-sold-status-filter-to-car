@@ -1,32 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T20:51:53.385Z",
-  "summary": "REQ-2 appears partially implemented in the frontend (a computed sold-cards purchase total excluding Essence was added). The diff does not provide evidence that REQ-1 (backend `getSoldCardBalance()` Essence exclusion) was implemented, and the diff summary is too truncated to confirm UI placement/formatting acceptance criteria for REQ-2.",
+  "generatedAt": "2026-02-10T21:07:09.808Z",
+  "summary": "Edits to the card editor appear to preserve existing age/version values on save, and React Query hooks were adjusted to perform non-blocking invalidations (intended to improve perceived save/sell speed). However, the diff evidence is truncated and does not clearly show sell-specific behavior changes, and an unrequested Google OAuth hook is referenced in the updated frontend summaries.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Update the backend sold-card balance calculation so that sold cards with payment method `essence` subtract 0 purchase cost in `getSoldCardBalance()` (non-Essence behavior unchanged, including discountPercent handling).",
-      "reason": "The provided `backend/main.mo` diff is truncated and does not include any shown changes to (or implementation details of) `getSoldCardBalance()` or the sold-card balance computation logic. No other backend file is modified.",
+      "id": "REQ-3",
+      "requirement": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "reason": "The provided diff excerpt for React Query hooks is truncated before any sell/mark-as-sold mutation logic, and no sell dialog/component file is listed as modified, so there is insufficient direct evidence that the sell flow no longer awaits sequential invalidations before closing.",
       "evidence": [
-        "backend/main.mo (truncated; no `getSoldCardBalance()` logic shown)"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Display a new \"Purchase total\" metric in the \"Bilanz verkaufter Karten\" summary grid, positioned to the left of \"Sale proceeds\", formatted as a euro amount with 2 decimals.",
-      "reason": "While a `soldCardsPurchaseTotal` value is computed, the diff snippet is truncated before the relevant UI section, so there is no direct evidence that (a) the tile is rendered, (b) it is positioned immediately left of \"Sale proceeds\", and (c) it is formatted as a euro amount with 2 decimals.",
-      "evidence": [
-        "frontend/src/pages/PortfolioPage.tsx (truncated; shows computation but not the rendered summary grid / formatting)"
+        "frontend/src/hooks/useQueries.ts (truncated)",
+        "MODIFIED FILES list does not include a sell dialog/component (e.g., SellOrTradeDialog)"
       ]
     }
   ],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "Addition of Google OAuth2 authentication via a new/updated `useGoogleAuth` hook (Google Identity Services), implying an additional auth provider beyond Internet Identity.",
+      "reason": "This feature is not requested and conflicts with the non-goal of not introducing new authentication providers; the only evidence is its inclusion in the updated `frontend-file-summaries.txt` content.",
+      "evidence": [
+        "frontend-file-summaries.txt (truncated): \"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication...\""
+      ]
+    }
+  ],
   "confidence": 0.62,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/pages/PortfolioPage.tsx",
+    "frontend/src/components/EditCardDialog.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

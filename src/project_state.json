@@ -1,18 +1,35 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App mit Verkaufsbilanz-Übersicht für verkaufte Karten",
+  "summary": "Projekt zur Kartenverwaltung: UI-Anpassungen im Karten-Editor und Performance-Optimierungen beim Speichern/Verkaufen.",
   "architectural_notes": [],
   "known_issues": [
-    "Verkaufsbilanz rechnet aktuell Kaufpreis von mit Essence gecrafteten Karten fälschlicherweise in die Kaufpreis-Summe ein"
+    "Speichern nach Kartenbearbeitung dauert sehr lange.",
+    "„Verkaufen“ einer Karte dauert sehr lange."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-in-the-sold-cards-balance-ui-section-bilanz-verkaufter-karten-display-an-additional-summary-metric-labeled-purchase-total-positioned-to-the-left-of-the-existing-sale-proceeds-metric-showing-the-sum-of-discounted-purchase-prices-of-all-sold-cards-excluding-any-cards-with-payment-method-essence-essence-contributes-0-to-this-purchase-total",
-      "title": "In the \"Sold cards balance\" UI section (\"Bilanz verkaufter Karten\"), display an additional summary metric labeled \"Purchase total\" positioned to the left of the existing \"Sale proceeds\" metric, showing the sum of discounted purchase prices of all sold cards excluding any cards with payment method `essence` (Essence contributes 0 to this purchase total).",
+      "id": "feature-remove-the-age-and-version-input-fields-from-the-card-edit-dialog-ui-and-ensure-editing-a-card-no-longer-requires-the-user-to-enter-or-validate-those-fields",
+      "title": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-perceived-performance-for-save-after-editing-a-card-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
+      "title": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
       "reqIds": [
         "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-perceived-performance-for-sell-mark-card-as-sold-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
+      "title": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
@@ -20,26 +37,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "In der Ansicht „Bilanz verkaufter Karten“ zusätzlich zu „Verkaufserlöse“ auch „Kaufpreis“ anzeigen (Summe der Kaufpreise verkaufter Karten)",
+      "summary": "Im Karten-Editor die Eingabefelder „Version“ und „Alter“ entfernen.",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Verkaufsbilanz: Bei mit Essence gecrafteten Karten darf der Kaufpreis nicht in die Kaufpreis-Summe einfließen (nur Verkaufspreis werten)",
+      "summary": "Speichern nach Kartenbearbeitung und „Verkaufen“ beschleunigen (Performance-Optimierung).",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Update the backend sold-card balance calculation so that sold cards crafted/bought with the payment method `essence` do not subtract any purchase cost from the sold-card balance (i.e., treat their purchase cost as 0 in the sold-card balance calculation).",
-      "reqIds": [
-        "REQ-1"
-      ],
       "status": "pending"
     }
   ],
-  "projectName": "Fix sold-card balance to exclude Essence purchase costs and display sold purchase total",
+  "projectName": "Remove Age/Version inputs from card editor and speed up save/sell actions",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

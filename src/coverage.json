@@ -1,42 +1,60 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T20:51:53.388Z",
+  "generatedAt": "2026-02-10T21:07:09.811Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the backend sold-card balance calculation so that sold cards crafted/bought with the payment method `essence` do not subtract any purchase cost from the sold-card balance (i.e., treat their purchase cost as 0 in the sold-card balance calculation).",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/EditCardDialog.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/EditCardDialog.tsx"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the \"Sold cards balance\" UI section (\"Bilanz verkaufter Karten\"), display an additional summary metric labeled \"Purchase total\" positioned to the left of the existing \"Sale proceeds\" metric, showing the sum of discounted purchase prices of all sold cards excluding any cards with payment method `essence` (Essence contributes 0 to this purchase total).",
+        "summary": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/PortfolioPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/EditCardDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/PortfolioPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/EditCardDialog.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/SellOrTradeDialog.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/PortfolioPage.tsx",
+    "frontend/src/components/EditCardDialog.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

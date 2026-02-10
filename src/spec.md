@@ -1,10 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure sold-card balance calculations and the sold-cards balance UI correctly exclude Essence purchase costs and show the total purchase cost for sold cards.
+**Goal:** Simplify the card edit dialog by removing Age/Version inputs and make Save/Sell actions feel faster by closing dialogs immediately after successful mutations.
 
 **Planned changes:**
-- Update backend sold-card balance logic so sold cards purchased/crafted with payment method `essence` contribute their sale price but subtract 0 purchase cost (non-Essence behavior, including discounts, remains unchanged).
-- Update the "Bilanz verkaufter Karten" UI to add a new summary metric labeled "Purchase total" to the left of "Sale proceeds", summing discounted purchase prices for sold cards excluding `essence` (Essence contributes 0), formatted in euros with 2 decimals.
+- Remove the "Age" and "Version" input fields from the card edit dialog UI and adjust form/validation so saving edits no longer requires those fields.
+- Ensure saving an edited card preserves the existing stored age/version values (do not clear or overwrite them).
+- Update the edit-card "Save" flow to close the dialog and show success feedback immediately after a successful backend response, while triggering any needed React Query refreshes in the background (avoid sequential awaited invalidations/refetches).
+- Update the "Sell" (mark as sold) flow to close the dialog and show success feedback immediately after a successful backend response, while triggering any needed React Query refreshes in the background (avoid sequential awaited invalidations/refetches).
+- Prevent duplicate toasts and avoid refetch loops while maintaining existing error handling (errors keep the dialog open and show a toast).
 
-**User-visible outcome:** In "Bilanz verkaufter Karten", users see a new "Purchase total" next to "Sale proceeds", and the sold-card balance no longer reduces results due to Essence-based purchase costs.
+**User-visible outcome:** Users can edit cards without seeing or filling Age/Version fields, and both saving edits and selling a card close the dialog promptly with success feedback while the list/metrics update shortly afterward.

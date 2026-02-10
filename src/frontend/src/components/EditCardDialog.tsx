@@ -47,8 +47,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
   const [league, setLeague] = useState(card.league);
   const [club, setClub] = useState(card.club);
   const [position, setPosition] = useState<Position>(card.position);
-  const [age, setAge] = useState(card.age.toString());
-  const [version, setVersion] = useState(card.version);
   const [season, setSeason] = useState(card.season);
 
   const { mutateAsync: updateCard, isPending } = useUpdateCard();
@@ -65,8 +63,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
     setLeague(card.league);
     setClub(card.club);
     setPosition(card.position);
-    setAge(card.age.toString());
-    setVersion(card.version);
     setSeason(card.season);
     
     // Convert purchaseDate from nanoseconds to date string
@@ -82,7 +78,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
     e.preventDefault();
 
     const discount = discountPercent.trim() === '' ? 0 : parseFloat(discountPercent);
-    const cardAge = age.trim() === '' ? 0 : parseInt(age);
     const purchaseDateValue = purchaseDate.trim() === '' ? null : BigInt(new Date(purchaseDate).getTime() * 1000000);
 
     try {
@@ -99,8 +94,8 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
         league: league.trim(),
         club: club.trim(),
         position,
-        age: cardAge,
-        version: version.trim(),
+        age: Number(card.age),
+        version: card.version,
         season: season.trim(),
       });
 
@@ -120,10 +115,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
     country.trim().length > 0 &&
     league.trim().length > 0 &&
     club.trim().length > 0 &&
-    age.trim().length > 0 &&
-    !isNaN(parseInt(age)) &&
-    parseInt(age) >= 0 &&
-    version.trim().length > 0 &&
     season.trim().length > 0;
 
   return (
@@ -279,32 +270,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-age" className="text-sm">Alter *</Label>
-            <Input
-              id="edit-age"
-              type="number"
-              min="0"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="0"
-              required
-              className="h-9"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-version" className="text-sm">Version *</Label>
-            <Input
-              id="edit-version"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              placeholder="z.B. Gold, Silver"
-              required
-              className="h-9"
-            />
           </div>
 
           <div className="space-y-1.5">
