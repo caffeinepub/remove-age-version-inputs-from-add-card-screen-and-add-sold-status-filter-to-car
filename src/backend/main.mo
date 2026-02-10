@@ -11,8 +11,6 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -381,7 +379,9 @@ actor {
           case (null) {};
           case (?price) { balance += price };
         };
-        balance -= card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
+        if (not (card.paymentMethod == #essence)) {
+          balance -= card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
+        };
       };
     };
 

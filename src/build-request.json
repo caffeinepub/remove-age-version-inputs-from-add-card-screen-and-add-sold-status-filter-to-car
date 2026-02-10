@@ -1,75 +1,54 @@
 {
   "kind": "build_request",
-  "title": "Add sold-cards balance overview to Portfolio",
+  "title": "Fix sold-card balance to exclude Essence purchase costs and display sold purchase total",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a backend query endpoint that returns an aggregated sold-cards balance for the caller, computed as (sum of purchase costs) minus (sum of sale prices) across all cards with transactionType == #sold.",
+      "text": "Update the backend sold-card balance calculation so that sold cards crafted/bought with the payment method `essence` do not subtract any purchase cost from the sold-card balance (i.e., treat their purchase cost as 0 in the sold-card balance calculation).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "Kannst du im Portfolio noch eine zweite Übersicht erstellen in dem die Bilanz der verkauften Karten angezeigt wird? Also die Karten die verkauft wurden sollen in einer Gesamtbilanz der Kaufpreise minus Verkaufspreise aller Karten zeigen"
+          "Karten die mit Essence gecraftet wurden sollen nur mit dem Verkaufspreis gewertet werden in der Verkaufsbilanz. Momentan wird der Kaufpreis mit Essence noch in die Rechnung mitinbegriffen, aber das soll nicht so sein."
         ]
       },
       "acceptanceCriteria": [
-        "A new public query method exists in backend/main.mo that is callable by authenticated users (same permission guard pattern as other portfolio queries).",
-        "The aggregation only considers cards where transactionType == #sold.",
-        "Purchase cost uses the same effective purchase calculation used elsewhere in the app: purchasePrice * (1 - discountPercent/100).",
-        "For PaymentMethod #essence, treat purchase cost as 0.0 to match existing sold-card profit logic in the UI.",
-        "The response includes (at minimum) totalPurchaseCost, totalSaleProceeds, and soldBalancePurchaseMinusSales (all Float)."
+        "Calling `getSoldCardBalance()` for a user only subtracts discounted purchase costs for sold cards whose payment method is not `essence`.",
+        "For sold cards with payment method `essence`, `getSoldCardBalance()` includes the sale price but subtracts 0 purchase cost.",
+        "Existing behavior for non-Essence sold cards (cash/eth) remains unchanged, including discountPercent handling."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a React Query hook that fetches the new backend sold-cards balance aggregation and caches it under a stable query key scoped to the logged-in principal.",
+      "text": "In the \"Sold cards balance\" UI section (\"Bilanz verkaufter Karten\"), display an additional summary metric labeled \"Purchase total\" positioned to the left of the existing \"Sale proceeds\" metric, showing the sum of discounted purchase prices of all sold cards excluding any cards with payment method `essence` (Essence contributes 0 to this purchase total).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-8"
         ],
         "quotes": [
-          "zweite Übersicht ... Bilanz der verkauften Karten ... Kaufpreise minus Verkaufspreise"
+          "Bei „Bilanz verkaufter Karten“ sollen links neben „Verkaufserlöse“ noch „Kaufpreis“ stehen, bei dem die Summe der Kaufpreise der verkauften Karten steht."
         ]
       },
       "acceptanceCriteria": [
-        "A new hook is added in frontend/src/hooks/useQueries.ts that calls the new backend method when actor + identity are available.",
-        "The hook returns sensible defaults (0 totals) when actor/identity are unavailable or the call fails, consistent with existing hook patterns in useQueries.ts.",
-        "The query key is unique (e.g., ['soldCardsBalance', principal]) and is invalidated/refetched when card mutations occur (same invalidation strategy used for other portfolio totals)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Update the Portfolio page to include a second summary/overview section that displays the aggregated sold-cards balance (total purchase costs minus total sale proceeds) for sold cards.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "im Portfolio noch eine zweite Übersicht ... Gesamtbilanz der Kaufpreise minus Verkaufspreise aller Karten"
-        ]
-      },
-      "acceptanceCriteria": [
-        "frontend/src/pages/PortfolioPage.tsx shows an additional overview section/card dedicated to sold-card balance, separate from the existing overall portfolio summary.",
-        "The UI displays: total sold purchase cost, total sold sale proceeds, and the resulting sold balance (purchase minus sale).",
-        "The UI handles the empty state (no sold cards) gracefully by showing zeros and/or a short informational note without crashing.",
-        "The new section uses existing design system components already used on the page (e.g., Card/CardHeader/CardContent) and does not modify any files under frontend/src/components/ui (immutable)."
+        "The \"Bilanz verkaufter Karten\" summary grid shows a new tile/row item labeled \"Purchase total\" placed immediately before (to the left of) the \"Sale proceeds\" tile on desktop layouts.",
+        "\"Purchase total\" equals the sum over sold cards of `purchasePrice * (1 - discountPercent/100)` for non-Essence payment methods; sold cards with payment method `essence` contribute 0.",
+        "The displayed purchase total is formatted as a euro amount with 2 decimals (e.g., €12.34).",
+        "The sold-card balance value shown continues to match the backend `getSoldCardBalance()` result after REQ-1 is implemented."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files in frontend immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, and anything under frontend/src/components/ui).",
-    "Keep all Motoko logic in the single actor in backend/main.mo; do not introduce additional backend services.",
-    "Do not add a migration unless persistent state schema changes are required (this change should not require schema changes)."
+    "Backend must remain a single Motoko actor (all logic in backend/main.mo).",
+    "Do not edit frontend files under frontend/src/components/ui or other immutable paths listed in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Do not redesign or change the existing SoldCardsModal trade/sales listing behavior beyond what is necessary to support the new portfolio overview.",
-    "Do not add new authentication methods (Internet Identity remains the only auth mechanism).",
-    "Do not add external databases or third-party analytics."
+    "Changing how overall portfolio totals (e.g., total invested across all cards) are calculated.",
+    "Adding new filters or additional analytics beyond the requested purchase-total display and Essence exclusion rule.",
+    "Changing the sold/trade transaction list presentation beyond what is necessary to support the requested totals."
   ],
   "imageRequirements": {
     "required": [],

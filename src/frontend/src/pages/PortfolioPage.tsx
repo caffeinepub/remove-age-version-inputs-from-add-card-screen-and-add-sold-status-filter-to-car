@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useCalculateTotalInvested, useCalculateTotalReturns, useGetUserCards, useCalculateInvestmentTotals, useGetTransactionSummary, useCountCraftedCards, useGetSoldCardBalance } from '../hooks/useQueries';
+import { useState, useMemo } from 'react';
+import { useCalculateTotalInvested, useCalculateTotalReturns, useGetUserCards, useCalculateInvestmentTotals, useGetTransactionSummary, useCountCraftedCards, useGetSoldCardBalance, useGetTransactionGroups } from '../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Package, Coins, Banknote, ArrowLeftRight, Sparkles, Receipt } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Package, Coins, Banknote, ArrowLeftRight, Sparkles, Receipt, ShoppingCart } from 'lucide-react';
 import { PaymentMethod } from '../backend';
 import SoldCardsModal from '../components/SoldCardsModal';
 import CraftedCardsModal from '../components/CraftedCardsModal';
@@ -23,6 +23,7 @@ export default function PortfolioPage() {
   const { data: transactionSummary, isLoading: summaryLoading } = useGetTransactionSummary();
   const { data: craftedCardsCount = BigInt(0), isLoading: craftedCardsLoading } = useCountCraftedCards();
   const { data: soldCardBalance = 0, isLoading: soldBalanceLoading } = useGetSoldCardBalance();
+  const { data: transactionGroups, isLoading: transactionGroupsLoading } = useGetTransactionGroups();
 
   const totalBalance = totalReturns - totalInvested;
   const isProfit = totalBalance >= 0;
@@ -36,7 +37,21 @@ export default function PortfolioPage() {
 
   const isSoldBalanceProfit = soldCardBalance >= 0;
 
-  const isLoading = investedLoading || returnsLoading || cardsLoading || investmentTotalsLoading || summaryLoading || craftedCardsLoading || soldBalanceLoading;
+  // Calculate purchase total for sold cards (excluding Essence)
+  const soldCardsPurchaseTotal = useMemo(() => {
+    if (!transactionGroups?.sold) return 0;
+    
+    return transactionGroups.sold.reduce((total, card) => {
+      // Only include non-Essence cards in purchase total
+      if (card.paymentMethod !== PaymentMethod.essence) {
+        const discountedPrice = card.purchasePrice * (1 - card.discountPercent / 100);
+        return total + discountedPrice;
+      }
+      return total;
+    }, 0);
+  }, [transactionGroups]);
+
+  const isLoading = investedLoading || returnsLoading || cardsLoading || investmentTotalsLoading || summaryLoading || craftedCardsLoading || soldBalanceLoading || transactionGroupsLoading;
 
   if (isLoading) {
     return (
@@ -104,10 +119,17 @@ export default function PortfolioPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
               <div className="p-4 border rounded-lg bg-card/50">
                 <div className="text-sm text-muted-foreground mb-1">Anzahl verkauft</div>
                 <div className="text-2xl font-bold">{soldCount}</div>
+              </div>
+              <div className="p-4 border rounded-lg bg-card/50">
+                <div className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                  <ShoppingCart className="w-3 h-3" />
+                  Kaufpreis
+                </div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">€{soldCardsPurchaseTotal.toFixed(2)}</div>
               </div>
               <div className="p-4 border rounded-lg bg-card/50">
                 <div className="text-sm text-muted-foreground mb-1">Verkaufserlöse</div>

@@ -1,12 +1,10 @@
 # Specification
 
 ## Summary
-**Goal:** Add a sold-cards balance overview to the Portfolio that aggregates purchase costs minus sale proceeds for sold cards.
+**Goal:** Ensure sold-card balance calculations and the sold-cards balance UI correctly exclude Essence purchase costs and show the total purchase cost for sold cards.
 
 **Planned changes:**
-- Add a new authenticated backend query in `backend/main.mo` that aggregates sold cards only (`transactionType == #sold`) and returns `totalPurchaseCost`, `totalSaleProceeds`, and `soldBalancePurchaseMinusSales`.
-- Implement purchase-cost calculation consistent with existing logic: `purchasePrice * (1 - discountPercent/100)`, and treat `PaymentMethod #essence` purchase cost as `0.0`.
-- Add a new React Query hook in `frontend/src/hooks/useQueries.ts` to fetch/cache the sold-cards balance under a stable key scoped to the logged-in principal and refetch via the existing portfolio invalidation strategy.
-- Update `frontend/src/pages/PortfolioPage.tsx` to display a second, separate overview section/card showing total sold purchase cost, total sold sale proceeds, and the resulting sold balance, with a graceful empty state.
+- Update backend sold-card balance logic so sold cards purchased/crafted with payment method `essence` contribute their sale price but subtract 0 purchase cost (non-Essence behavior, including discounts, remains unchanged).
+- Update the "Bilanz verkaufter Karten" UI to add a new summary metric labeled "Purchase total" to the left of "Sale proceeds", summing discounted purchase prices for sold cards excluding `essence` (Essence contributes 0), formatted in euros with 2 decimals.
 
-**User-visible outcome:** The Portfolio page shows an additional summary section that displays an aggregated balance for sold cards (purchase costs minus sale proceeds), including totals and a computed balance, even when there are no sold cards.
+**User-visible outcome:** In "Bilanz verkaufter Karten", users see a new "Purchase total" next to "Sale proceeds", and the sold-card balance no longer reduces results due to Essence-based purchase costs.
