@@ -1,2 +1,3 @@
-# remove-age-version-inputs-from-add-card-screen-and-add-sold-status-filter-to-car
-Exported from Caffeine project: Add sold-cards balance overview to Portfolio
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

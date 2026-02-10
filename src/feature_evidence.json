@@ -1,0 +1,47 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-add-a-react-query-hook-that-fetches-the-new-backend-sold-cards-balance-aggregation-and-caches-it-under-a-stable-query-key-scoped-to-the-logged-in-principal",
+      "featureTitle": "Add a React Query hook that fetches the new backend sold-cards balance aggregation and caches it under a stable query key scoped to the logged-in principal.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-portfolio-page-to-include-a-second-summary-overview-section-that-displays-the-aggregated-sold-cards-balance-total-purchase-costs-minus-total-sale-proceeds-for-sold-cards",
+      "featureTitle": "Update the Portfolio page to include a second summary/overview section that displays the aggregated sold-cards balance (total purchase costs minus total sale proceeds) for sold cards.",
+      "files": [
+        "frontend/src/pages/PortfolioPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

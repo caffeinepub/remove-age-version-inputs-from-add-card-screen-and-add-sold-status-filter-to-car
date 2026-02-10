@@ -1,0 +1,45 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Portfolio: Sold-cards balance overview (frontend)",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Add a React Query hook to fetch and cache the caller-scoped sold-cards balance aggregation.",
+      "acceptanceCriteria": [
+        "A new hook is added in frontend/src/hooks/useQueries.ts that calls the new backend method when actor + identity are available.",
+        "The hook returns sensible defaults (0 totals) when actor/identity are unavailable or the call fails, consistent with existing hook patterns in useQueries.ts.",
+        "The query key is unique (e.g., ['soldCardsBalance', principal]) and is invalidated/refetched when card mutations occur (same invalidation strategy used for other portfolio totals)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/backend.d.ts",
+          "operation": "modify",
+          "description": "Update the generated backend type definitions to include the new sold-cards balance aggregation return type (totalPurchaseCost, totalSaleProceeds, soldBalancePurchaseMinusSales as number/Float) and the corresponding backendInterface method signature so the new React Query hook can call it."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query hook (e.g., useGetSoldCardsBalanceAggregation) that calls the new backend capability when actor + identity are available and caches under a stable key scoped to the principal (e.g., ['soldCardsBalance', identity.getPrincipal().toString()]). Return 0-default totals when unavailable or on failure, following existing query patterns. Also extend existing card mutation onSuccess invalidation lists (add/update/delete/mark sold/update sale price/record trade/etc.) to invalidate queries with queryKey ['soldCardsBalance'] so the overview refetches after mutations."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Show a second Portfolio overview section that displays aggregated sold-cards purchase cost, sale proceeds, and purchase-minus-sale balance.",
+      "acceptanceCriteria": [
+        "frontend/src/pages/PortfolioPage.tsx shows an additional overview section/card dedicated to sold-card balance, separate from the existing overall portfolio summary.",
+        "The UI displays: total sold purchase cost, total sold sale proceeds, and the resulting sold balance (purchase minus sale).",
+        "The UI handles the empty state (no sold cards) gracefully by showing zeros and/or a short informational note without crashing.",
+        "The new section uses existing design system components already used on the page (e.g., Card/CardHeader/CardContent) and does not modify any files under frontend/src/components/ui (immutable)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "operation": "modify",
+          "description": "Import and use the new sold-cards balance React Query hook, then render an additional summary Card section (using the existing Card/CardHeader/CardContent pattern already on the page) that displays total sold purchase cost, total sold sale proceeds, and the sold balance (purchase minus sale). Ensure a graceful empty state (e.g., soldCount===0 or all returned totals are 0) with zeros and an informational note, without altering any frontend/src/components/ui files."
+        }
+      ]
+    }
+  ]
+}

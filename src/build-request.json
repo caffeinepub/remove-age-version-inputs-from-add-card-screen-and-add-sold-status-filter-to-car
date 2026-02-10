@@ -1,0 +1,78 @@
+{
+  "kind": "build_request",
+  "title": "Add sold-cards balance overview to Portfolio",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Add a backend query endpoint that returns an aggregated sold-cards balance for the caller, computed as (sum of purchase costs) minus (sum of sale prices) across all cards with transactionType == #sold.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Kannst du im Portfolio noch eine zweite Übersicht erstellen in dem die Bilanz der verkauften Karten angezeigt wird? Also die Karten die verkauft wurden sollen in einer Gesamtbilanz der Kaufpreise minus Verkaufspreise aller Karten zeigen"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new public query method exists in backend/main.mo that is callable by authenticated users (same permission guard pattern as other portfolio queries).",
+        "The aggregation only considers cards where transactionType == #sold.",
+        "Purchase cost uses the same effective purchase calculation used elsewhere in the app: purchasePrice * (1 - discountPercent/100).",
+        "For PaymentMethod #essence, treat purchase cost as 0.0 to match existing sold-card profit logic in the UI.",
+        "The response includes (at minimum) totalPurchaseCost, totalSaleProceeds, and soldBalancePurchaseMinusSales (all Float)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add a React Query hook that fetches the new backend sold-cards balance aggregation and caches it under a stable query key scoped to the logged-in principal.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "zweite Übersicht ... Bilanz der verkauften Karten ... Kaufpreise minus Verkaufspreise"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new hook is added in frontend/src/hooks/useQueries.ts that calls the new backend method when actor + identity are available.",
+        "The hook returns sensible defaults (0 totals) when actor/identity are unavailable or the call fails, consistent with existing hook patterns in useQueries.ts.",
+        "The query key is unique (e.g., ['soldCardsBalance', principal]) and is invalidated/refetched when card mutations occur (same invalidation strategy used for other portfolio totals)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Update the Portfolio page to include a second summary/overview section that displays the aggregated sold-cards balance (total purchase costs minus total sale proceeds) for sold cards.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "im Portfolio noch eine zweite Übersicht ... Gesamtbilanz der Kaufpreise minus Verkaufspreise aller Karten"
+        ]
+      },
+      "acceptanceCriteria": [
+        "frontend/src/pages/PortfolioPage.tsx shows an additional overview section/card dedicated to sold-card balance, separate from the existing overall portfolio summary.",
+        "The UI displays: total sold purchase cost, total sold sale proceeds, and the resulting sold balance (purchase minus sale).",
+        "The UI handles the empty state (no sold cards) gracefully by showing zeros and/or a short informational note without crashing.",
+        "The new section uses existing design system components already used on the page (e.g., Card/CardHeader/CardContent) and does not modify any files under frontend/src/components/ui (immutable)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not edit files in frontend immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, and anything under frontend/src/components/ui).",
+    "Keep all Motoko logic in the single actor in backend/main.mo; do not introduce additional backend services.",
+    "Do not add a migration unless persistent state schema changes are required (this change should not require schema changes)."
+  ],
+  "nonGoals": [
+    "Do not redesign or change the existing SoldCardsModal trade/sales listing behavior beyond what is necessary to support the new portfolio overview.",
+    "Do not add new authentication methods (Internet Identity remains the only auth mechanism).",
+    "Do not add external databases or third-party analytics."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
