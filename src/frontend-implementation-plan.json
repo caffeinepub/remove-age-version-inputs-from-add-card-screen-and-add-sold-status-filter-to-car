@@ -1,63 +1,49 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Card editor cleanup and faster save/sell UX",
+  "title": "Surface actor initialization failures to avoid infinite Connecting screen",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Remove Age/Version fields from the card edit dialog and ensure edits preserve stored age/version values.",
+      "id": "REQ-4",
+      "summary": "Show a user-visible backend connection error state when actor initialization fails and provide Retry + Log out recovery actions.",
       "acceptanceCriteria": [
-        "In the card edit dialog, there are no visible input controls labeled \"Age\" or \"Version\".",
-        "The Save/Submit button validation does not depend on \"Age\" or \"Version\" being present or filled.",
-        "Saving an edited card keeps the existing stored values for age and version unchanged (i.e., those properties are not cleared or overwritten unintentionally)."
+        "If actor creation fails (e.g., the useActor React Query enters an error state), the UI must not remain indefinitely on the \"Connecting…\" spinner.",
+        "When actor creation fails, the UI must show an error message (English) indicating the backend connection failed, and provide a Retry action.",
+        "Retry must trigger a new actor initialization attempt without requiring the user to manually refresh the page.",
+        "A Log out action must remain available from the error state so the user can recover."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/EditCardDialog.tsx",
+          "path": "frontend/src/hooks/useActorQueryState.ts",
+          "operation": "create",
+          "description": "Add a non-immutable wrapper hook that reads the React Query cache state for the actor query (status/error/fetchStatus) keyed by the current identity principal, so the UI can detect actor initialization failures and render an error state. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Remove the Age (Alter) and Version inputs and related local state; update submit logic to pass through the existing card.age and card.version values (so they remain unchanged), and adjust form validation so Save no longer depends on Age/Version."
+          "description": "Update the authenticated \"Connecting…\" flow to consult the actor React Query error state (via the new wrapper hook) and render an English error screen when actor initialization fails, including Retry (triggers a new actor init attempt via React Query reset/refetch without window reload) and Log out actions. Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
-      "id": "REQ-2",
-      "summary": "Make card \"Save\" feel faster by not blocking dialog close on sequential React Query invalidation/refetch work.",
+      "id": "REQ-5",
+      "summary": "Make actor initialization timeout/error handling consistent so the spinner only appears during an active attempt and never spins indefinitely when fetching stops without an actor.",
       "acceptanceCriteria": [
-        "After a successful update response from the backend, the edit dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
-        "Required data refreshes still happen in the background so the cards list/portfolio metrics update shortly after saving.",
-        "No duplicate toasts or repeated refetch loops are introduced."
+        "The \"Connecting…\" screen must only be shown while an actor initialization attempt is actively in progress.",
+        "If the actor query stops fetching and has no actor available, the UI must not remain on the \"Connecting…\" screen.",
+        "Actor timeout logic must not depend solely on isFetching in a way that allows indefinite loading when the query errors quickly.",
+        "Manual QA: after login, the app reaches the main tabs view with Portfolio selected by default when actor initialization and profile loading succeed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Refactor the update-card mutation success behavior to avoid awaiting multiple sequential query invalidations before the mutation resolves; trigger the same required refreshes in a non-blocking/background way (and keep toast behavior single-shot)."
+          "description": "Refactor the App actor-init state machine to derive UI states from the actor query's fetchStatus/status (in-progress vs error vs idle) instead of only checking !actor, ensuring: spinner shows only while actively fetching; a stopped-without-actor condition transitions to timeout or error; and the existing successful path continues to the main tabs with Portfolio selected by default. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/EditCardDialog.tsx",
+          "path": "frontend/src/hooks/useActorQueryState.ts",
           "operation": "modify",
-          "description": "Ensure the edit dialog closes immediately after mutateAsync resolves (which should now correspond closely to backend success), without adding any extra invalidation waiting or duplicate success feedback in the component."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Make card \"Sell\" feel faster by not blocking dialog close on sequential React Query invalidation/refetch work.",
-      "acceptanceCriteria": [
-        "After a successful \"mark as sold\" response from the backend, the sell dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
-        "The cards list and relevant portfolio/sold-card views update shortly after selling without requiring a manual refresh.",
-        "No regression in error handling (errors still show toasts and leave the dialog open)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Refactor the mark-as-sold mutation success behavior to avoid awaiting multiple sequential query invalidations before React Query calls component onSuccess; trigger the same refreshes in the background while preserving existing error/toast handling."
-        },
-        {
-          "path": "frontend/src/components/SellOrTradeDialog.tsx",
-          "operation": "modify",
-          "description": "Verify/adjust sell success handling so the dialog closes immediately upon successful mutation completion, while keeping error handling unchanged and avoiding any new refetch loops or duplicate toasts."
+          "description": "Extend the wrapper hook to expose the minimal derived booleans needed by App (e.g., isAttemptInProgress, isError, isIdleWithoutActor) so timeout logic can be implemented without modifying immutable hooks. Verify the component's usage instructions before implementing."
         }
       ]
     }

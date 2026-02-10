@@ -1,33 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T21:07:09.808Z",
-  "summary": "Edits to the card editor appear to preserve existing age/version values on save, and React Query hooks were adjusted to perform non-blocking invalidations (intended to improve perceived save/sell speed). However, the diff evidence is truncated and does not clearly show sell-specific behavior changes, and an unrequested Google OAuth hook is referenced in the updated frontend summaries.",
+  "generatedAt": "2026-02-10T21:44:19.260Z",
+  "summary": "The diff adds a new hook to read React Query cache state for the actor initialization query and updates App.tsx to track actor init progress/error/timeout, aiming to avoid an infinite “Connecting…” spinner. However, due to truncation, the actual UI rendering for the error/timeout states and the exact “Connecting…” gating logic cannot be fully verified. The diff summary also describes multiple unrelated feature changes (including Google OAuth) that were not requested and conflict with stated non-goals.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
-      "reason": "The provided diff excerpt for React Query hooks is truncated before any sell/mark-as-sold mutation logic, and no sell dialog/component file is listed as modified, so there is insufficient direct evidence that the sell flow no longer awaits sequential invalidations before closing.",
+      "id": "REQ-4",
+      "requirement": "When actor creation fails, the UI must show an English error message indicating the backend connection failed, and provide Retry and Log out actions.",
+      "reason": "The provided App.tsx diff is truncated before the rendering/state-machine section; while state flags and hooks are added (hasActorError, retryActor, clear), the actual user-visible error UI (message + Retry + Log out) is not directly shown in the visible code.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated)",
-        "MODIFIED FILES list does not include a sell dialog/component (e.g., SellOrTradeDialog)"
+        "frontend/src/App.tsx (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "The “Connecting…” screen must only be shown while actor initialization is actively in progress; if the actor query is no longer fetching and no actor is available, the UI must transition away from the spinner to timeout or error rather than spinning forever.",
+      "reason": "The diff shows new derived booleans (including isIdleWithoutData) in useActorQueryState, but App.tsx (as shown) only uses isAttemptInProgress/actorFetching/hasActorError and the key UI decision logic is truncated, so it cannot be confirmed that the spinner is gated strictly to active fetching and that non-fetching/no-actor states exit the spinner reliably.",
+      "evidence": [
+        "frontend/src/hooks/useActorQueryState.ts",
+        "frontend/src/App.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Addition of Google OAuth2 authentication via a new/updated `useGoogleAuth` hook (Google Identity Services), implying an additional auth provider beyond Internet Identity.",
-      "reason": "This feature is not requested and conflicts with the non-goal of not introducing new authentication providers; the only evidence is its inclusion in the updated `frontend-file-summaries.txt` content.",
+      "description": "Added/implemented Google OAuth authentication hook (a new authentication provider).",
+      "reason": "The BuildRequest explicitly states: “Do not add new authentication providers (only Internet Identity).” The diff summary indicates a Google auth hook with full OAuth2 flow.",
       "evidence": [
-        "frontend-file-summaries.txt (truncated): \"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication...\""
+        "frontend-file-summaries.txt (mentions \"frontend/src/hooks/useGoogleAuth.ts\" implementing Google OAuth2)"
+      ]
+    },
+    {
+      "description": "Broad UI/feature changes to Portfolio/Cards and multiple dialogs (rarity styling, sold cards profit logic, add/edit/sell/trade dialogs, crafted cards modal, etc.).",
+      "reason": "The BuildRequest non-goals say not to redesign Portfolio/Cards features or change related behavior beyond the connecting/actor init flow. The diff summary describes multiple unrelated UI and business-logic changes.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions changes across PortfolioPage, CardsPage, AddCardDialog, EditCardDialog, SoldCardsModal, SellOrTradeDialog, CraftedCardsModal, CardItem)"
+      ]
+    },
+    {
+      "description": "Changes to React Query mutation invalidation behavior in useQueries (removed await on invalidateQueries) unrelated to actor init spinner issue.",
+      "reason": "Not requested by REQ-4/REQ-5, which focus on surfacing actor initialization failures and consistent timeout/error transitions.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions \"frontend/src/hooks/useQueries.ts\" non-blocking invalidations)"
+      ]
+    },
+    {
+      "description": "Global theme/style changes (OKLCH color system, space-inspired theme).",
+      "reason": "Not requested; scope is specifically the connecting screen / actor init error handling.",
+      "evidence": [
+        "frontend-file-summaries.txt (mentions \"frontend/src/index.css\" theme changes)"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.56,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/EditCardDialog.tsx",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/hooks/useActorQueryState.ts",
     "project_state.json"
   ]
 }

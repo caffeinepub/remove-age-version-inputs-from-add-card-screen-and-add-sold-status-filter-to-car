@@ -1,54 +1,32 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Projekt zur Kartenverwaltung: UI-Anpassungen im Karten-Editor und Performance-Optimierungen beim Speichern/Verkaufen.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Speichern nach Kartenbearbeitung dauert sehr lange.",
-    "„Verkaufen“ einer Karte dauert sehr lange."
+    "After login, app gets stuck on connecting/loading screen indefinitely instead of navigating to Portfolio."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-remove-the-age-and-version-input-fields-from-the-card-edit-dialog-ui-and-ensure-editing-a-card-no-longer-requires-the-user-to-enter-or-validate-those-fields",
-      "title": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+      "id": "feature-prevent-the-app-from-getting-stuck-on-the-connecting-loading-screen-after-a-successful-internet-identity-login-by-surfacing-backend-actor-initialization-failures-react-query-error-state-and-providing-a-user-visible-error-state-with-recovery-actions",
+      "title": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
       "reqIds": [
-        "REQ-1"
+        "REQ-4"
       ],
       "version": 1
     },
     {
-      "id": "feature-improve-perceived-performance-for-save-after-editing-a-card-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
-      "title": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "id": "feature-update-the-actor-initialization-flow-useactor-hook-and-app-state-machine-so-that-timeouts-and-errors-are-handled-consistently-if-actor-initialization-is-neither-successfully-resolved-nor-actively-fetching-the-ui-must-transition-away-from-the-spinner-to-either-a-timeout-state-or-an-error-state-rather-than-spinning-forever",
+      "title": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
       "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-improve-perceived-performance-for-sell-mark-card-as-sold-by-preventing-the-ui-from-waiting-on-multiple-sequential-react-query-invalidations-refetches-before-closing-the-dialog-and-showing-success-feedback",
-      "title": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
-      "reqIds": [
-        "REQ-3"
+        "REQ-5"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Im Karten-Editor die Eingabefelder „Version“ und „Alter“ entfernen.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Speichern nach Kartenbearbeitung und „Verkaufen“ beschleunigen (Performance-Optimierung).",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Remove Age/Version inputs from card editor and speed up save/sell actions",
+  "new_feature_requests": [],
+  "projectName": "Fix infinite Connecting screen after login (actor init errors not surfaced)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

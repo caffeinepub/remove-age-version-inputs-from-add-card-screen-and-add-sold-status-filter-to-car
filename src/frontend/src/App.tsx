@@ -13,12 +13,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { useActor } from './hooks/useActor';
+import { useActorQueryState } from './hooks/useActorQueryState';
 import { useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   const { identity, loginStatus, isInitializing, clear } = useInternetIdentity();
   const { actor, isFetching: actorFetching } = useActor();
+  const { isAttemptInProgress, isError: actorQueryIsError, error: actorError, retry: retryActor } = useActorQueryState();
   const queryClient = useQueryClient();
   const { 
     data: userProfile, 
@@ -35,12 +37,15 @@ export default function App() {
   const isAuthenticated = !!identity;
   const isLoggingIn = loginStatus === 'logging-in';
   
+  // Detect actor initialization errors
+  const hasActorError = actorQueryIsError;
+  
   // Actor timeout: 10 seconds
   useEffect(() => {
-    if (isAuthenticated && !actor && actorFetching) {
+    if (isAuthenticated && !actor && (actorFetching || isAttemptInProgress)) {
       console.log('Starting actor timeout timer (10s)');
       const timer = setTimeout(() => {
-        if (!actor) {
+        if (!actor && !hasActorError) {
           console.error('Actor initialization timeout after 10 seconds');
           setActorTimeout(true);
         }
@@ -52,7 +57,7 @@ export default function App() {
     } else if (actor) {
       setActorTimeout(false);
     }
-  }, [isAuthenticated, actorFetching, actor]);
+  }, [isAuthenticated, actorFetching, isAttemptInProgress, actor, hasActorError]);
 
   // Profile timeout: 15 seconds
   useEffect(() => {
@@ -89,6 +94,8 @@ export default function App() {
       isAuthenticated,
       hasActor: !!actor,
       actorFetching,
+      isAttemptInProgress,
+      hasActorError,
       actorTimeout,
       profileLoading,
       profileFetched,
@@ -96,7 +103,7 @@ export default function App() {
       profileTimeout,
       hasProfile: !!userProfile,
     });
-  }, [isAuthenticated, actor, actorFetching, actorTimeout, profileLoading, profileFetched, profileError, profileTimeout, userProfile]);
+  }, [isAuthenticated, actor, actorFetching, isAttemptInProgress, hasActorError, actorTimeout, profileLoading, profileFetched, profileError, profileTimeout, userProfile]);
 
   // Determine if we should show profile setup modal
   const showProfileSetup = isAuthenticated && !!actor && profileFetched && userProfile === null && !profileError && !profileTimeout;
@@ -110,18 +117,24 @@ export default function App() {
     setRetryCount(prev => prev + 1);
     setActorTimeout(false);
     
-    const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-    console.log(`Waiting ${delay}ms before retry`);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    console.log('Clearing cache and re-logging in...');
-    await clear();
-    queryClient.clear();
-    
-    // Small delay before triggering re-login
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    try {
+      // Use the retry function from the actor query state
+      await retryActor();
+    } catch (error) {
+      console.error('Retry failed:', error);
+      // If retry fails, fall back to full reload
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+      console.log(`Waiting ${delay}ms before full reload`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      console.log('Clearing cache and reloading...');
+      await clear();
+      queryClient.clear();
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
   };
 
   // Handle retry for profile loading
@@ -188,8 +201,8 @@ export default function App() {
                 </p>
               </div>
             </div>
-          ) : actorTimeout ? (
-            // Actor initialization timeout
+          ) : hasActorError || actorTimeout ? (
+            // Actor initialization error or timeout
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="max-w-md w-full space-y-4">
                 <Alert variant="destructive">
@@ -199,9 +212,16 @@ export default function App() {
                     <p>
                       The connection to the backend could not be established. This may be due to a slow internet connection or temporary server issues.
                     </p>
-                    <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
-                      Actor initialization timeout after 10 seconds
-                    </p>
+                    {actorError && (
+                      <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
+                        {actorError instanceof Error ? actorError.message : String(actorError)}
+                      </p>
+                    )}
+                    {actorTimeout && !actorError && (
+                      <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
+                        Actor initialization timeout after 10 seconds
+                      </p>
+                    )}
                   </AlertDescription>
                 </Alert>
                 <div className="flex gap-3 justify-center">
@@ -215,7 +235,7 @@ export default function App() {
                 </div>
               </div>
             </div>
-          ) : !actor ? (
+          ) : !actor || isAttemptInProgress ? (
             // Actor is initializing
             <div className="flex items-center justify-center min-h-[60vh]">
               <div className="text-center space-y-4">

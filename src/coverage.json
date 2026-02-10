@@ -1,49 +1,39 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T21:07:09.811Z",
+  "generatedAt": "2026-02-10T21:44:19.263Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+        "id": "REQ-4",
+        "summary": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/EditCardDialog.tsx"
+          "frontend/src/hooks/useActorQueryState.ts",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/EditCardDialog.tsx"
+          "frontend/src/hooks/useActorQueryState.ts",
+          "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-2",
-        "summary": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+        "id": "REQ-5",
+        "summary": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/EditCardDialog.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useActorQueryState.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/EditCardDialog.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/SellOrTradeDialog.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useActorQueryState.ts"
         ]
       }
     ]
@@ -53,8 +43,8 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/EditCardDialog.tsx",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/hooks/useActorQueryState.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

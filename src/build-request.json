@@ -1,71 +1,56 @@
 {
   "kind": "build_request",
-  "title": "Remove Age/Version inputs from card editor and speed up save/sell actions",
-  "priority": "normal",
+  "title": "Fix infinite Connecting screen after login (actor init errors not surfaced)",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-1",
-      "text": "Remove the \"Age\" and \"Version\" input fields from the card edit dialog UI, and ensure editing a card no longer requires the user to enter or validate those fields.",
+      "id": "REQ-4",
+      "text": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "Wenn man eine Karte bearbeitet, soll dort auch nicht mehr „Version“ und „Alter“ als Eingabefeld geben."
+          "Jetzt ist wieder das problem dass nach anmeldung der connceting screen mit dem ladekreis kommt, aber nichts passiert. Es lädt die ganze Zeit. Normalerweise sollte man nacch Anmeldung ins Portfolio gelangen"
         ]
       },
       "acceptanceCriteria": [
-        "In the card edit dialog, there are no visible input controls labeled \"Age\" or \"Version\".",
-        "The Save/Submit button validation does not depend on \"Age\" or \"Version\" being present or filled.",
-        "Saving an edited card keeps the existing stored values for age and version unchanged (i.e., those properties are not cleared or overwritten unintentionally)."
+        "If actor creation fails (e.g., the useActor React Query enters an error state), the UI must not remain indefinitely on the \"Connecting…\" spinner.",
+        "When actor creation fails, the UI must show an error message (English) indicating the backend connection failed, and provide a Retry action.",
+        "Retry must trigger a new actor initialization attempt without requiring the user to manually refresh the page.",
+        "A Log out action must remain available from the error state so the user can recover."
       ]
     },
     {
-      "id": "REQ-2",
-      "text": "Improve perceived performance for \"Save\" after editing a card by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
+      "id": "REQ-5",
+      "text": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-6"
         ],
         "quotes": [
-          "Und wenn man Karte bearbeitet und dann speichert, dauert das Speichern sehr lange."
+          "...nach anmeldung der connceting screen mit dem ladekreis kommt, aber nichts passiert. Es lädt die ganze Zeit."
         ]
       },
       "acceptanceCriteria": [
-        "After a successful update response from the backend, the edit dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
-        "Required data refreshes still happen in the background so the cards list/portfolio metrics update shortly after saving.",
-        "No duplicate toasts or repeated refetch loops are introduced."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Improve perceived performance for \"Sell\" (mark card as sold) by preventing the UI from waiting on multiple sequential React Query invalidations/refetches before closing the dialog and showing success feedback.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Das gleiche bei „Verkaufen“ der Karte. Kann man das schneller machen?"
-        ]
-      },
-      "acceptanceCriteria": [
-        "After a successful \"mark as sold\" response from the backend, the sell dialog closes immediately (no delay caused by awaiting multiple query invalidations).",
-        "The cards list and relevant portfolio/sold-card views update shortly after selling without requiring a manual refresh.",
-        "No regression in error handling (errors still show toasts and leave the dialog open)."
+        "The \"Connecting…\" screen must only be shown while an actor initialization attempt is actively in progress.",
+        "If the actor query stops fetching and has no actor available, the UI must not remain on the \"Connecting…\" screen.",
+        "Actor timeout logic must not depend solely on isFetching in a way that allows indefinite loading when the query errors quickly.",
+        "Manual QA: after login, the app reaches the main tabs view with Portfolio selected by default when actor initialization and profile loading succeed."
       ]
     }
   ],
   "constraints": [
-    "Do not edit any files under frontend/src/components/ui or any path listed in frontend.immutablePaths.",
-    "Backend must remain a single Motoko actor in backend/main.mo; only add migration code if state schema changes (not expected for this request)."
+    "Do not edit files under frontend/src/components/ui (read-only).",
+    "Do not edit immutable frontend hook files listed by the platform (e.g., frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts) unless the platform allows; if changes are needed, implement safe wrappers or adjustments in non-immutable files (e.g., App.tsx) and React Query usage patterns.",
+    "All user-facing text introduced/changed by this request must be in English."
   ],
   "nonGoals": [
-    "Do not remove the underlying age/version fields from the backend data model or existing stored cards.",
-    "Do not redesign the sell/trade flow or change the trade feature behavior beyond performance improvements for selling.",
-    "Do not introduce new authentication providers (Internet Identity remains the only auth)."
+    "Do not add new authentication providers (only Internet Identity).",
+    "Do not redesign the Portfolio/Cards features or change backend card/profile data models.",
+    "Do not implement real-time updates or websocket-based connection handling."
   ],
   "imageRequirements": {
     "required": [],

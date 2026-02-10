@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Simplify the card edit dialog by removing Age/Version inputs and make Save/Sell actions feel faster by closing dialogs immediately after successful mutations.
+**Goal:** Stop the app from getting stuck on the “Connecting…” screen after Internet Identity login by correctly surfacing actor initialization failures and providing clear recovery actions.
 
 **Planned changes:**
-- Remove the "Age" and "Version" input fields from the card edit dialog UI and adjust form/validation so saving edits no longer requires those fields.
-- Ensure saving an edited card preserves the existing stored age/version values (do not clear or overwrite them).
-- Update the edit-card "Save" flow to close the dialog and show success feedback immediately after a successful backend response, while triggering any needed React Query refreshes in the background (avoid sequential awaited invalidations/refetches).
-- Update the "Sell" (mark as sold) flow to close the dialog and show success feedback immediately after a successful backend response, while triggering any needed React Query refreshes in the background (avoid sequential awaited invalidations/refetches).
-- Prevent duplicate toasts and avoid refetch loops while maintaining existing error handling (errors keep the dialog open and show a toast).
+- Update the app’s post-login/actor initialization UI flow to show “Connecting…” only while an actor initialization attempt is actively in progress.
+- When actor initialization fails (React Query error) or stops fetching without producing an actor, transition to a user-visible error/timeout state instead of spinning indefinitely.
+- Add an English error view for backend connection/actor init failure with actions to Retry (re-attempt actor initialization) and Log out (available from the error state).
 
-**User-visible outcome:** Users can edit cards without seeing or filling Age/Version fields, and both saving edits and selling a card close the dialog promptly with success feedback while the list/metrics update shortly afterward.
+**User-visible outcome:** After logging in, the user either reaches the main tabs view with Portfolio selected (when initialization succeeds) or sees an English error/timeout message with Retry and Log out options instead of an endless “Connecting…” spinner.
