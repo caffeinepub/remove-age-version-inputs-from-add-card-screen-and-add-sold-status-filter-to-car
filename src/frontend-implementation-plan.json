@@ -1,63 +1,58 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix secret token parsing, pre-login persistence, and backend connection error messaging",
+  "title": "Stabilize card deletion flow and enable sale price editing in card editor",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Fix hash-based secret token parsing/clearing for caffeineAdminToken and persist it to sessionStorage.",
+      "summary": "Make card deletion remove the card reliably from the gallery and keep UI/metrics stable by updating React Query cache and handling errors gracefully.",
       "acceptanceCriteria": [
-        "When the URL contains `#/anything?caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
-        "When the URL contains `#caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
-        "After extraction, the token is removed from the visible URL (hash) without reloading the page (existing behavior preserved).",
-        "If no token is present, `getSecretParameter('caffeineAdminToken')` returns null and does not throw."
+        "Deleting a card from the card gallery removes it from the cards list after the mutation completes.",
+        "No frontend error boundary screen, console uncaught exception, or backend trap is triggered during/after deletion for a valid card.",
+        "After deletion, any portfolio statistics that depend on the user’s cards reflect the deletion without requiring a manual page refresh (e.g., totals, transaction summary/groups, sold-card balance)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/urlParams.ts",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update secret extraction to support both hash-route query format (e.g. `#/route?caffeineAdminToken=...`) and pure hash query format (e.g. `#caffeineAdminToken=...`), persist found values to sessionStorage, and robustly remove only the secret from the visible hash (including when there is no `?` present)."
+          "description": "Harden the delete-card mutation by adding an optimistic cache update (remove card from the cached userCards list immediately), cancel/invalidate relevant queries safely, and implement rollback on error so the UI never renders into an inconsistent state after deletion."
+        },
+        {
+          "path": "frontend/src/components/CardItem.tsx",
+          "operation": "modify",
+          "description": "Adjust the delete confirmation flow to avoid UI instability during deletion (e.g., disable actions while pending, ensure dialogs close predictably, and avoid using stale card data after deletion) while relying on the improved mutation behavior."
+        },
+        {
+          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "operation": "modify",
+          "description": "Ensure portfolio metrics refresh seamlessly after card deletion by relying on the shared query keys and confirming the page remains resilient when lists/aggregates change rapidly (no render-time assumptions about deleted cards)."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Proactively extract/store caffeineAdminToken on initial app load so it survives Internet Identity redirects.",
+      "summary": "Extend the card edit dialog to allow editing an existing sale price and refresh portfolio metrics after saving.",
       "acceptanceCriteria": [
-        "On first render of the app (unauthenticated), the app attempts to extract `caffeineAdminToken` and store it in sessionStorage without showing any errors to the user.",
-        "After completing Internet Identity login, backend actor initialization succeeds in live deployment when a valid `caffeineAdminToken` was present before redirect.",
-        "If the token was not present, behavior remains unchanged (no crashes; existing error/timeout UI still works)."
+        "For cards with an existing salePrice, the edit dialog shows an editable sale price field prefilled with the current value.",
+        "Saving edits persists the updated sale price in the backend (salePrice changes are reflected when reloading cards).",
+        "After saving, the portfolio view reflects the updated sale price (e.g., total returns / sold-card balance) without requiring a manual refresh.",
+        "For cards without an existing salePrice, the edit dialog does not show the sale price field (or clearly keeps it disabled/hidden)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/EditCardDialog.tsx",
           "operation": "modify",
-          "description": "Add a mount-time effect that calls `getSecretParameter('caffeineAdminToken')` early (before any user login interaction) and swallows/logs any parsing errors without displaying UI errors; do not modify immutable auth/actor hook files."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Improve backend connection error UI to show readable, actionable English messaging while redacting sensitive secrets.",
-      "acceptanceCriteria": [
-        "If actor initialization fails, the UI shows an English error message with at least one actionable next step (e.g., retry, reload, log out/in).",
-        "If an error message is available from the actor query, it is shown in the error details area (as today) but must not include any extracted URL/session secret values."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/redactSecrets.ts",
-          "operation": "create",
-          "description": "Create a small utility to redact sensitive values (at minimum `caffeineAdminToken`, from both query-like fragments and arbitrary strings) from error messages before rendering them to the UI."
+          "description": "Add a conditional sale price input that is shown only when card.salePrice is present, prefill it from the current value, validate edits, and on submit persist the change by invoking the existing sale price update capability in addition to the existing card field update."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Update the actor-initialization failure/timeout UI copy to clear, user-readable English with suggested actions (Retry/Reload/Log out & log in again), and ensure any rendered error details are passed through the redaction utility so secrets never appear."
+          "description": "Ensure the sale price update mutation integrates cleanly with the edit dialog flow (including consistent invalidation of userCards and portfolio metric queries) so changes are reflected across the app without manual refresh."
         },
         {
-          "path": "frontend/src/components/ErrorBoundary.tsx",
+          "path": "frontend/src/components/CardItem.tsx",
           "operation": "modify",
-          "description": "Switch user-facing error boundary text that is touched by this fix to English and ensure technical details displayed (error/stack) are sanitized via the redaction utility to keep sensitive tokens out of the UI."
+          "description": "Ensure the card display updates correctly after an edited sale price is saved (including any sold/profit sections) by relying on refreshed query state and avoiding stale props assumptions."
         }
       ]
     }

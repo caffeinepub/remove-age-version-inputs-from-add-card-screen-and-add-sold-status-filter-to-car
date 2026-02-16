@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the post-login “Connection to the backend could not be established” issue in live deployment by reliably extracting/persisting `caffeineAdminToken` from hash-based URLs before Internet Identity redirects, and by improving the readability of backend connection errors.
+**Goal:** Fix card deletion in the gallery to be error-free and add the ability to edit an existing sale price in the card editor while keeping portfolio metrics in sync.
 
 **Planned changes:**
-- Update secret URL parameter parsing to support both `#/route?caffeineAdminToken=...` and `#caffeineAdminToken=...`, persist the token to `sessionStorage`, and remove it from the visible hash without a page reload.
-- Proactively extract/store `caffeineAdminToken` during initial app load (before the user clicks login) so it survives the Internet Identity redirect flow.
-- Improve the backend connection error UI to display a clear English message, include at least one suggested user action, and surface non-sensitive underlying initialization details without exposing any secret values.
+- Fix the card deletion flow so the card is removed successfully and the UI does not crash or show error overlays during/after deletion.
+- Ensure portfolio statistics and derived views refresh automatically after a card is deleted (no manual page refresh needed).
+- Extend the card edit dialog to show an editable sale price field only when a card already has a salePrice, prefilled with the current value.
+- Persist sale price edits and refresh portfolio metrics/views after saving so updated sale price impacts totals/returns without a manual refresh.
 
-**User-visible outcome:** Users can log in successfully in live deployment when a valid `caffeineAdminToken` is present in the URL, and if backend initialization fails they see a clearer English error with actionable next steps and safe diagnostic details.
+**User-visible outcome:** Users can delete cards from the gallery without errors and immediately see updated portfolio totals; users can edit an existing sale price in the card editor and see portfolio metrics update right after saving.

@@ -127,15 +127,7 @@ function clearParamFromHash(paramName: string): void {
     const queryStartIndex = hashContent.indexOf('?');
 
     if (queryStartIndex === -1) {
-        // No query string in hash, check if the entire hash is a query string
-        // (e.g., #caffeineAdminToken=xxx without a route)
-        const params = new URLSearchParams(hashContent);
-        if (params.has(paramName)) {
-            params.delete(paramName);
-            const newQueryString = params.toString();
-            const newUrl = window.location.pathname + window.location.search + (newQueryString ? '#' + newQueryString : '');
-            window.history.replaceState(null, '', newUrl);
-        }
+        // No query string in hash, nothing to remove
         return;
     }
 
@@ -164,9 +156,7 @@ function clearParamFromHash(paramName: string): void {
  * Hash fragments aren't sent to servers or logged in access logs
  * The hash is immediately cleared from the URL after extraction to prevent history leakage
  *
- * Supports both formats:
- * - Hash-route query: #/route?caffeineAdminToken=xxx
- * - Pure hash query: #caffeineAdminToken=xxx
+ * Usage: https://yourapp.com/#secret=xxx
  *
  * @param paramName - The name of the secret parameter
  * @returns The secret value if found (from hash or session), null otherwise
@@ -186,25 +176,11 @@ export function getSecretFromHash(paramName: string): string | null {
 
     // Remove the leading #
     const hashContent = hash.substring(1);
-    
-    // Check if there's a query string in the hash
-    const queryStartIndex = hashContent.indexOf('?');
-    
-    let secret: string | null = null;
-    
-    if (queryStartIndex !== -1) {
-        // Format: #/route?param=value
-        const hashQuery = hashContent.substring(queryStartIndex + 1);
-        const hashParams = new URLSearchParams(hashQuery);
-        secret = hashParams.get(paramName);
-    } else {
-        // Format: #param=value (no route, just query params)
-        const params = new URLSearchParams(hashContent);
-        secret = params.get(paramName);
-    }
+    const params = new URLSearchParams(hashContent);
+    const secret = params.get(paramName);
 
     if (secret) {
-        // Store in session for persistence across redirects
+        // Store in session for persistence
         storeSessionParameter(paramName, secret);
         // Immediately clear the secret parameter from URL to avoid history leakage
         clearParamFromHash(paramName);

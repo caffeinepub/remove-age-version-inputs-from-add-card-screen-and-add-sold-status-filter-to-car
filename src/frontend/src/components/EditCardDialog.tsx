@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUpdateCard } from '../hooks/useQueries';
-import { type Card, PaymentMethod, Position } from '../backend';
+import { type Card, PaymentMethod, Position, TransactionType } from '../backend';
 import {
   Dialog,
   DialogContent,
@@ -48,8 +48,13 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
   const [club, setClub] = useState(card.club);
   const [position, setPosition] = useState<Position>(card.position);
   const [season, setSeason] = useState(card.season);
+  const [salePrice, setSalePrice] = useState('');
 
   const { mutateAsync: updateCard, isPending } = useUpdateCard();
+
+  // Check if card has a sale price (is sold)
+  const hasSalePrice = card.salePrice !== undefined && card.salePrice !== null;
+  const isSold = card.transactionType === TransactionType.sold;
 
   // Reset form when card changes
   useEffect(() => {
@@ -65,6 +70,13 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
     setPosition(card.position);
     setSeason(card.season);
     
+    // Set sale price if it exists
+    if (card.salePrice !== undefined && card.salePrice !== null) {
+      setSalePrice(card.salePrice.toString());
+    } else {
+      setSalePrice('');
+    }
+    
     // Convert purchaseDate from nanoseconds to date string
     if (card.purchaseDate) {
       const date = new Date(Number(card.purchaseDate) / 1000000);
@@ -79,6 +91,9 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
 
     const discount = discountPercent.trim() === '' ? 0 : parseFloat(discountPercent);
     const purchaseDateValue = purchaseDate.trim() === '' ? null : BigInt(new Date(purchaseDate).getTime() * 1000000);
+    
+    // Parse sale price if provided
+    const salePriceValue = salePrice.trim() !== '' ? parseFloat(salePrice) : null;
 
     try {
       await updateCard({
@@ -97,6 +112,7 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
         age: Number(card.age),
         version: card.version,
         season: season.trim(),
+        salePrice: salePriceValue,
       });
 
       onOpenChange(false);
@@ -115,7 +131,9 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
     country.trim().length > 0 &&
     league.trim().length > 0 &&
     club.trim().length > 0 &&
-    season.trim().length > 0;
+    season.trim().length > 0 &&
+    // Validate sale price if provided
+    (salePrice.trim() === '' || (!isNaN(parseFloat(salePrice)) && parseFloat(salePrice) >= 0));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -208,6 +226,28 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
               className="h-9"
             />
           </div>
+
+          {/* Sale Price Field - Only show if card has a sale price */}
+          {hasSalePrice && (
+            <div className="space-y-1.5 p-3 border rounded-lg bg-blue-500/5 border-blue-500/20">
+              <Label htmlFor="edit-salePrice" className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                Verkaufspreis (€) {isSold && '*'}
+              </Label>
+              <Input
+                id="edit-salePrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+                placeholder="0.00"
+                className="h-9"
+              />
+              <p className="text-xs text-muted-foreground">
+                Dieser Wert kann bearbeitet werden, da die Karte einen Verkaufspreis hat.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="edit-notes" className="text-sm">Notizen</Label>

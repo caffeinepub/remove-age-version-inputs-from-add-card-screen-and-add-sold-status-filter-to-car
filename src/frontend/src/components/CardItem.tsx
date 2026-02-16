@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { type Card, PaymentMethod, TransactionType, Position } from '../backend';
-import { useMarkCardAsSold, useDeleteCard, useGetUserCards } from '../hooks/useQueries';
+import { useDeleteCard } from '../hooks/useQueries';
 import { Card as CardUI, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -242,16 +242,16 @@ export default function CardItem({ card }: CardItemProps) {
         </CardContent>
 
         <CardFooter className="gap-2 pt-3">
-          <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => setIsEditDialogOpen(true)}>
+          <Button variant="outline" size="sm" className="flex-1 text-xs h-8" onClick={() => setIsEditDialogOpen(true)} disabled={isDeleting}>
             <Edit className="w-3 h-3 mr-1" />
             Bearbeiten
           </Button>
           {!isSold && !isTraded && (
-            <Button variant="default" size="sm" className="flex-1 text-xs h-8" onClick={() => setIsSellOrTradeDialogOpen(true)}>
+            <Button variant="default" size="sm" className="flex-1 text-xs h-8" onClick={() => setIsSellOrTradeDialogOpen(true)} disabled={isDeleting}>
               Verkaufen/Tauschen
             </Button>
           )}
-          <Button variant="destructive" size="sm" className="h-8 px-2" onClick={() => setIsDeleteDialogOpen(true)}>
+          <Button variant="destructive" size="sm" className="h-8 px-2" onClick={() => setIsDeleteDialogOpen(true)} disabled={isDeleting}>
             <Trash2 className="w-3 h-3" />
           </Button>
         </CardFooter>

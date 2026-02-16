@@ -4,37 +4,42 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "After live deployment, login fails with error: \"Connection to the backend could not be established\"."
+    "Deleting a card from the card gallery triggers an error instead of deleting and updating the portfolio."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-secret-url-parameter-parsing-so-the-app-can-reliably-read-caffeineadmintoken-from-hash-based-routes-e-g-someroute-caffeineadmintoken-as-well-as-from-pure-hash-query-formats-e-g-caffeineadmintoken-and-persist-the-extracted-token-in-sessionstorage-as-intended",
-      "title": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
+      "id": "feature-fix-the-error-that-occurs-when-deleting-a-card-from-the-card-gallery-so-that-the-card-is-actually-deleted-and-the-ui-remains-stable-no-uncaught-errors-error-overlays",
+      "title": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-persist-the-caffeineadmintoken-before-an-internet-identity-login-redirect-can-remove-it-from-the-url-by-proactively-extracting-storing-it-during-initial-app-load-before-the-user-clicks-login",
-      "title": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
+      "id": "feature-extend-the-card-edit-dialog-to-allow-changing-the-sale-price-when-the-card-already-has-a-sale-price-i-e-saleprice-is-present-and-ensure-the-portfolio-metrics-update-accordingly-after-saving",
+      "title": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-improve-the-backend-connection-error-state-to-surface-the-underlying-actor-initialization-error-in-a-user-readable-way-english-including-a-short-suggested-action-while-keeping-sensitive-tokens-out-of-the-ui",
-      "title": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix post-login backend connection failure in live deployment",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix error when deleting a card from the card gallery; ensure the card is deleted and changes are reflected in the portfolio",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Allow editing a card's sale price (if present) when editing a card; update the portfolio accordingly",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Card Portfolio",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,70 +1,55 @@
 {
   "kind": "build_request",
-  "title": "Fix post-login backend connection failure in live deployment",
-  "priority": "high",
+  "title": "Fix card deletion error and allow editing sale price in card editor",
+  "projectName": "Card Portfolio",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
-      "target": "frontend",
+      "text": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-1"
         ],
         "quotes": [
-          "Nach liveschaltung kommt nach anmeldung eine fehlermeldung. Connection to the backend could not be established"
+          "Beim löschen einer Karte aus der kartengalerie kommt eine Fehlermeldung. Die Karte soll gelöscht werden und die Änderungen im Portfolio übernommen werden."
         ]
       },
       "acceptanceCriteria": [
-        "When the URL contains `#/anything?caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
-        "When the URL contains `#caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
-        "After extraction, the token is removed from the visible URL (hash) without reloading the page (existing behavior preserved).",
-        "If no token is present, `getSecretParameter('caffeineAdminToken')` returns null and does not throw."
+        "Deleting a card from the card gallery removes it from the cards list after the mutation completes.",
+        "No frontend error boundary screen, console uncaught exception, or backend trap is triggered during/after deletion for a valid card.",
+        "After deletion, any portfolio statistics that depend on the user’s cards reflect the deletion without requiring a manual page refresh (e.g., totals, transaction summary/groups, sold-card balance)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
-      "target": "frontend",
+      "text": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-1"
         ],
         "quotes": [
-          "After live deployment, login fails with error: \"Connection to the backend could not be established\"."
+          "Außerdem soll man wenn man eine Karte bearbeitet auch den Verkaufspreis ändern können, falls es einen gibt. Die Änderungen ebenfalls im Portfolio aktualisieren."
         ]
       },
       "acceptanceCriteria": [
-        "On first render of the app (unauthenticated), the app attempts to extract `caffeineAdminToken` and store it in sessionStorage without showing any errors to the user.",
-        "After completing Internet Identity login, backend actor initialization succeeds in live deployment when a valid `caffeineAdminToken` was present before redirect.",
-        "If the token was not present, behavior remains unchanged (no crashes; existing error/timeout UI still works)."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ],
-        "quotes": [
-          "Connection to the backend could not be established"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If actor initialization fails, the UI shows an English error message with at least one actionable next step (e.g., retry, reload, log out/in).",
-        "If an error message is available from the actor query, it is shown in the error details area (as today) but must not include any extracted URL/session secret values."
+        "For cards with an existing salePrice, the edit dialog shows an editable sale price field prefilled with the current value.",
+        "Saving edits persists the updated sale price in the backend (salePrice changes are reflected when reloading cards).",
+        "After saving, the portfolio view reflects the updated sale price (e.g., total returns / sold-card balance) without requiring a manual refresh.",
+        "For cards without an existing salePrice, the edit dialog does not show the sale price field (or clearly keeps it disabled/hidden)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/hooks/useInternetIdentity.ts`/`.tsx`, `frontend/src/hooks/useActor.ts`, `frontend/src/hooks/useActor.tsx`, `frontend/src/main.tsx`, or anything in `frontend/src/components/ui` (immutable paths).",
-    "Use English for any user-facing text changed or added as part of this fix."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
+    "Do not modify files under frontend/src/components/ui or any other paths listed as immutable in SYSTEM_CONTEXT."
   ],
   "nonGoals": [
-    "Adding new authentication providers (only Internet Identity).",
-    "Changing backend authorization rules or data schema unless proven necessary to resolve the connection failure."
+    "Adding third-party authentication methods beyond Internet Identity.",
+    "Introducing external databases or off-chain storage.",
+    "Changing transaction type semantics (e.g., automatically marking cards sold when editing sale price) unless required to fix the deletion bug."
   ],
   "imageRequirements": {
     "required": [],

@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-secret-url-parameter-parsing-so-the-app-can-reliably-read-caffeineadmintoken-from-hash-based-routes-e-g-someroute-caffeineadmintoken-as-well-as-from-pure-hash-query-formats-e-g-caffeineadmintoken-and-persist-the-extracted-token-in-sessionstorage-as-intended",
-      "featureTitle": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
+      "featureId": "feature-fix-the-error-that-occurs-when-deleting-a-card-from-the-card-gallery-so-that-the-card-is-actually-deleted-and-the-ui-remains-stable-no-uncaught-errors-error-overlays",
+      "featureTitle": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
       "files": [
-        "frontend/src/utils/urlParams.ts"
+        "frontend/src/components/CardItem.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -23,10 +24,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-persist-the-caffeineadmintoken-before-an-internet-identity-login-redirect-can-remove-it-from-the-url-by-proactively-extracting-storing-it-during-initial-app-load-before-the-user-clicks-login",
-      "featureTitle": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
+      "featureId": "feature-extend-the-card-edit-dialog-to-allow-changing-the-sale-price-when-the-card-already-has-a-sale-price-i-e-saleprice-is-present-and-ensure-the-portfolio-metrics-update-accordingly-after-saving",
+      "featureTitle": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
       "files": [
-        "frontend/src/App.tsx"
+        "frontend/src/components/CardItem.tsx",
+        "frontend/src/components/EditCardDialog.tsx",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -40,29 +43,6 @@
       ],
       "testIds": [
         "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-improve-the-backend-connection-error-state-to-surface-the-underlying-actor-initialization-error-in-a-user-readable-way-english-including-a-short-suggested-action-while-keeping-sensitive-tokens-out-of-the-ui",
-      "featureTitle": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/ErrorBoundary.tsx",
-        "frontend/src/utils/redactSecrets.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "http-outcalls@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

@@ -202,6 +202,7 @@ export function useUpdateCard() {
       age,
       version,
       season,
+      salePrice,
     }: {
       cardId: CardId;
       name: string;
@@ -218,10 +219,13 @@ export function useUpdateCard() {
       age: number;
       version: string;
       season: string;
+      salePrice?: number | null;
     }) => {
       if (!actor) throw new Error('Actor nicht verfügbar');
       if (!identity) throw new Error('Nicht angemeldet');
-      return actor.updateCard(
+      
+      // First update the card fields
+      await actor.updateCard(
         cardId,
         name,
         rarity,
@@ -238,6 +242,11 @@ export function useUpdateCard() {
         purchaseDate,
         notes
       );
+      
+      // If salePrice is provided and not null, update it separately
+      if (salePrice !== undefined && salePrice !== null) {
+        await actor.updateSalePrice(cardId, salePrice);
+      }
     },
     onSuccess: () => {
       // Trigger invalidations in background without blocking
@@ -270,6 +279,35 @@ export function useDeleteCard() {
       if (!identity) throw new Error('Nicht angemeldet');
       return actor.deleteCard(cardId);
     },
+    onMutate: async (cardId: CardId) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['userCards'] });
+      
+      // Snapshot the previous value
+      const previousCards = queryClient.getQueryData<Card[]>(['userCards', identity?.getPrincipal().toString()]);
+      
+      // Optimistically update to remove the card
+      if (previousCards) {
+        queryClient.setQueryData<Card[]>(
+          ['userCards', identity?.getPrincipal().toString()],
+          previousCards.filter(card => card.id !== cardId)
+        );
+      }
+      
+      // Return context with the snapshot
+      return { previousCards };
+    },
+    onError: (error: Error, cardId, context) => {
+      // Rollback to the previous value on error
+      if (context?.previousCards) {
+        queryClient.setQueryData(
+          ['userCards', identity?.getPrincipal().toString()],
+          context.previousCards
+        );
+      }
+      console.error('Error deleting card:', error);
+      toast.error(`Fehler beim Löschen: ${error.message}`);
+    },
     onSuccess: () => {
       // Trigger invalidations in background without blocking
       queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
@@ -283,9 +321,9 @@ export function useDeleteCard() {
       queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
       toast.success('Karte erfolgreich gelöscht');
     },
-    onError: (error: Error) => {
-      console.error('Error deleting card:', error);
-      toast.error(`Fehler beim Löschen: ${error.message}`);
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['userCards'] });
     },
   });
 }

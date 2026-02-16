@@ -1,65 +1,58 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-13T23:29:09.278Z",
-  "summary": "The diff implements early token extraction on App mount (REQ-2) and adds secret redaction utilities, but evidence is insufficient or indicates gaps for the required hash parsing/removal behavior (REQ-1) and the specific actor-initialization error UX improvements (REQ-3). The diff summary also indicates multiple unrelated feature changes, including adding Google OAuth (a stated non-goal) and modifying an immutable hook path.",
-  "missing_requirements": [
-    {
-      "id": "REQ-1",
-      "requirement": "Parse caffeineAdminToken correctly from both `#/route?caffeineAdminToken=...` and pure-hash formats like `#caffeineAdminToken=...`, persist to sessionStorage, and remove the token from the visible URL hash without reloading; return null safely if absent.",
-      "reason": "The shown `getUrlParameter` implementation only attempts hash parsing when there is a `?` in the hash, and does not show handling for pure-hash `#caffeineAdminToken=XYZ`. The hash-cleaning behavior is mentioned but the implementation is truncated, and `getSecretParameter` itself is not shown in the provided excerpt, so the acceptance criteria cannot be confirmed from the diff summary.",
-      "evidence": [
-        "frontend/src/utils/urlParams.ts (shows `getUrlParameter` only parsing hash query when `hash.indexOf('?') !== -1`; file is truncated before clear/hash removal logic completes)",
-        "frontend/src/App.tsx (imports `getSecretParameter` from `./utils/urlParams`, but its implementation/behavior is not shown in the diff summary)"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Improve backend connection/actor initialization error state with an English message including an actionable next step, and show underlying error details while ensuring no secrets/tokens are displayed.",
-      "reason": "While secret redaction utilities are added and ErrorBoundary now redacts details, the diff excerpt does not show the specific actor-initialization error UI changes in App (the relevant section is truncated). Therefore it is not verifiable that actor initialization failures display the required actionable English message and redacted technical details in the actor error state.",
-      "evidence": [
-        "frontend/src/App.tsx (truncated; imports `errorToRedactedString` but the actor error UI rendering is not shown)",
-        "frontend/src/components/ErrorBoundary.tsx (updates error boundary UI, but this is not evidence of the actor initialization error state UI required by REQ-3)",
-        "frontend/src/utils/redactSecrets.ts (added redaction helpers, but does not itself implement the actor error-state UI)"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-16T23:10:25.505Z",
+  "summary": "REQ-2 appears to be implemented via a conditional sale price field in the edit dialog plus corresponding mutation support and backend sale price update logic. REQ-1 appears to be addressed via optimistic delete handling and cache invalidation, but the diff evidence is indirect (backend delete implementation is not shown in the provided backend snippet). Several unrelated features were added/changed (not requested), including Google OAuth support and various UI/portfolio/app changes.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Added/implemented Google OAuth authentication hook (new authentication provider).",
-      "reason": "The BuildRequest explicitly lists adding new authentication providers as a non-goal (only Internet Identity).",
+      "description": "Added Google OAuth2 authentication support (beyond Internet Identity).",
+      "reason": "Explicitly listed as a non-goal: “Adding third-party authentication methods beyond Internet Identity.”",
       "evidence": [
-        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useGoogleAuth.ts`: \"implementing real Google OAuth2 authentication\")"
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication ...\")"
       ]
     },
     {
-      "description": "Modified `frontend/src/hooks/useActor.ts` behavior (actor initialization retries/manual retry exposure).",
-      "reason": "The BuildRequest constraints explicitly prohibit editing `frontend/src/hooks/useActor.ts` / `.tsx` (immutable path).",
+      "description": "Introduced caffeineAdminToken URL/session parameter extraction and related routing/state behavior.",
+      "reason": "Not requested by REQ-1 or REQ-2; unrelated to card deletion or sale price editing.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useActor.ts`: \"Actor initialization hook with disabled automatic retries...\")"
+        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"early caffeineAdminToken extraction on mount ...\")",
+        "frontend/src/utils/urlParams.ts"
       ]
     },
     {
-      "description": "Multiple unrelated UI/feature changes to pages and dialogs (portfolio metrics overhaul, cards gallery filters, free-text rarity input, profit calculation changes, etc.).",
-      "reason": "These changes are not requested by REQ-1/2/3 and are outside the stated goal of fixing post-login backend connection failure and related error handling/token persistence.",
+      "description": "Major UI/UX and portfolio dashboard changes (new sections/metrics/modals and behavior changes beyond ensuring metrics update after delete/edit).",
+      "reason": "Not requested by REQ-1/REQ-2, which only require stability and metric updates after deletion/editing salePrice.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions changes across `frontend/src/pages/PortfolioPage.tsx`, `frontend/src/pages/CardsPage.tsx`, `frontend/src/components/AddCardDialog.tsx`, `frontend/src/components/EditCardDialog.tsx`, `frontend/src/components/SoldCardsModal.tsx`, `frontend/src/components/SellOrTradeDialog.tsx`, etc.)"
+        "frontend-file-summaries.txt (\"frontend/src/pages/PortfolioPage.tsx\": \"... sold-cards balance overview section with four metrics ...\")",
+        "frontend-file-summaries.txt (\"frontend/src/components/SoldCardsModal.tsx\": \"... correctly treating Essence-purchased cards as zero monetary cost ...\")",
+        "frontend-file-summaries.txt (\"frontend/src/components/CraftedCardsModal.tsx\": \"Modal dialog displaying all Essence-crafted cards ...\")"
       ]
     },
     {
-      "description": "Changed React Query mutation behavior to make invalidations non-blocking (removed await on invalidateQueries).",
-      "reason": "Not requested by REQ-1/2/3 and unrelated to secret parsing/token persistence or actor initialization error UI.",
+      "description": "Global theme/style overhaul using an OKLCH color system and space-inspired theme.",
+      "reason": "Not requested by REQ-1/REQ-2.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useQueries.ts`: \"removed await on invalidateQueries\")"
+        "frontend-file-summaries.txt (\"frontend/src/index.css\": \"Global styles with OKLCH color system ...\")"
+      ]
+    },
+    {
+      "description": "Additional logging, retry behavior changes, and actor initialization error UI/state machine changes.",
+      "reason": "Not requested by REQ-1/REQ-2; tangential to deletion/sale price editing.",
+      "evidence": [
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useActor.ts\": \"Actor initialization hook with disabled automatic retries ...\")",
+        "frontend/src/hooks/useQueries.ts (added extensive logging/retry configuration in shown sections)",
+        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"... improved actor initialization error UI ...\")"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.66,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/ErrorBoundary.tsx",
-    "frontend/src/utils/redactSecrets.ts",
+    "frontend/src/components/CardItem.tsx",
+    "frontend/src/components/EditCardDialog.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
