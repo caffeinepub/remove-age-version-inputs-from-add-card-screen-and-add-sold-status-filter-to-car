@@ -42,21 +42,9 @@ export interface InvestmentTotals {
     totalCashInvested: number;
     totalEthInvested: number;
 }
-export interface TransactionSummary {
-    tradedGivenCount: bigint;
-    forSaleCount: bigint;
-    tradedReceivedCount: bigint;
-    soldCount: bigint;
-}
 export interface TradeTransaction {
     givenCards: Array<CardId>;
     receivedCards: Array<CardId>;
-}
-export interface TransactionGroup {
-    sold: Array<Card>;
-    tradedReceived: Array<Card>;
-    forSale: Array<Card>;
-    tradedGiven: Array<Card>;
 }
 export interface CardWithUser {
     cards: Array<Card>;
@@ -107,49 +95,16 @@ export interface backendInterface {
     calculateTotalBalance(): Promise<number>;
     calculateTotalInvested(): Promise<number>;
     calculateTotalReturns(): Promise<number>;
-    countCraftedCards(): Promise<bigint>;
     deleteCard(cardId: CardId): Promise<void>;
     getAllCardsForUser(): Promise<Array<Card>>;
-    getAllCardsForUserRPC(user: Principal): Promise<Array<Card>>;
     getAllCardsWithUser(user: Principal): Promise<CardWithUser>;
-    getAllCraftedCards(): Promise<{
-        cards: Array<Card>;
-        count: bigint;
-    }>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getCardById(cardId: CardId): Promise<Card | null>;
-    getCardsByTransactionType(transactionType: TransactionType): Promise<Array<Card>>;
-    getCraftedCards(): Promise<Array<Card>>;
-    getCraftedCardsWithBalance(): Promise<{
-        balance: bigint;
-        cards: Array<Card>;
-    }>;
     getPortfolioSnapshot(): Promise<PortfolioSnapshot>;
     getSoldCardBalance(): Promise<number>;
-    getSoldCards(user: Principal): Promise<Array<Card>>;
-    getTradeSummary(): Promise<{
-        totalReceived: bigint;
-        totalCards: bigint;
-        givenCards: Array<Card>;
-        totalGiven: bigint;
-        receivedCards: Array<Card>;
-    }>;
-    getTransactionGroups(): Promise<TransactionGroup>;
-    getTransactionSummary(): Promise<TransactionSummary>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    getValidCardIds(): Promise<Array<CardId>>;
-    initializeDefaultCardForUsers(user1: Principal, user2: Principal): Promise<void>;
     isCallerAdmin(): Promise<boolean>;
-    markCardAsSold(cardId: CardId, salePrice: number, saleDate: Time | null): Promise<void>;
-    markCardAsSoldById(cardId: CardId, salePrice: number, saleDate: Time | null): Promise<void>;
-    recordTradeTransaction(givenCardIds: Array<CardId>, receivedCardIds: Array<CardId>): Promise<void>;
-    revertTradeTransaction(cardIds: Array<CardId>): Promise<void>;
-    saveBatchCards(cardsToSave: Array<Card>): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    swapCardIds(user1: Principal, user2: Principal): Promise<void>;
-    transferCardOwnership(cardId: CardId, newOwner: Principal): Promise<void>;
     updateCard(cardId: CardId, name: string, rarity: string, purchasePrice: number, discountPercent: number, paymentMethod: PaymentMethod, country: string, league: string, club: string, age: bigint, version: string, season: string, position: Position, purchaseDate: Time | null, notes: string): Promise<void>;
-    updateCardTransactionType(cardId: CardId, transactionType: TransactionType): Promise<void>;
     updateSalePrice(cardId: CardId, newSalePrice: number): Promise<void>;
 }

@@ -63,18 +63,6 @@ export interface TradeTransaction {
   'givenCards' : Array<CardId>,
   'receivedCards' : Array<CardId>,
 }
-export interface TransactionGroup {
-  'sold' : Array<Card>,
-  'tradedReceived' : Array<Card>,
-  'forSale' : Array<Card>,
-  'tradedGiven' : Array<Card>,
-}
-export interface TransactionSummary {
-  'tradedGivenCount' : bigint,
-  'forSaleCount' : bigint,
-  'tradedReceivedCount' : bigint,
-  'soldCount' : bigint,
-}
 export type TransactionType = { 'sold' : null } |
   { 'tradedReceived' : null } |
   { 'forSale' : null } |
@@ -139,57 +127,16 @@ export interface _SERVICE {
   'calculateTotalBalance' : ActorMethod<[], number>,
   'calculateTotalInvested' : ActorMethod<[], number>,
   'calculateTotalReturns' : ActorMethod<[], number>,
-  'countCraftedCards' : ActorMethod<[], bigint>,
   'deleteCard' : ActorMethod<[CardId], undefined>,
   'getAllCardsForUser' : ActorMethod<[], Array<Card>>,
-  'getAllCardsForUserRPC' : ActorMethod<[Principal], Array<Card>>,
   'getAllCardsWithUser' : ActorMethod<[Principal], CardWithUser>,
-  'getAllCraftedCards' : ActorMethod<
-    [],
-    { 'cards' : Array<Card>, 'count' : bigint }
-  >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCardById' : ActorMethod<[CardId], [] | [Card]>,
-  'getCardsByTransactionType' : ActorMethod<[TransactionType], Array<Card>>,
-  'getCraftedCards' : ActorMethod<[], Array<Card>>,
-  'getCraftedCardsWithBalance' : ActorMethod<
-    [],
-    { 'balance' : bigint, 'cards' : Array<Card> }
-  >,
   'getPortfolioSnapshot' : ActorMethod<[], PortfolioSnapshot>,
   'getSoldCardBalance' : ActorMethod<[], number>,
-  'getSoldCards' : ActorMethod<[Principal], Array<Card>>,
-  'getTradeSummary' : ActorMethod<
-    [],
-    {
-      'totalReceived' : bigint,
-      'totalCards' : bigint,
-      'givenCards' : Array<Card>,
-      'totalGiven' : bigint,
-      'receivedCards' : Array<Card>,
-    }
-  >,
-  'getTransactionGroups' : ActorMethod<[], TransactionGroup>,
-  'getTransactionSummary' : ActorMethod<[], TransactionSummary>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getValidCardIds' : ActorMethod<[], Array<CardId>>,
-  'initializeDefaultCardForUsers' : ActorMethod<
-    [Principal, Principal],
-    undefined
-  >,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'markCardAsSold' : ActorMethod<[CardId, number, [] | [Time]], undefined>,
-  'markCardAsSoldById' : ActorMethod<[CardId, number, [] | [Time]], undefined>,
-  'recordTradeTransaction' : ActorMethod<
-    [Array<CardId>, Array<CardId>],
-    undefined
-  >,
-  'revertTradeTransaction' : ActorMethod<[Array<CardId>], undefined>,
-  'saveBatchCards' : ActorMethod<[Array<Card>], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'swapCardIds' : ActorMethod<[Principal, Principal], undefined>,
-  'transferCardOwnership' : ActorMethod<[CardId, Principal], undefined>,
   'updateCard' : ActorMethod<
     [
       CardId,
@@ -208,10 +155,6 @@ export interface _SERVICE {
       [] | [Time],
       string,
     ],
-    undefined
-  >,
-  'updateCardTransactionType' : ActorMethod<
-    [CardId, TransactionType],
     undefined
   >,
   'updateSalePrice' : ActorMethod<[CardId, number], undefined>,

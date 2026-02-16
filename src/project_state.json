@@ -4,44 +4,37 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "App performance issue: some load times are very long; user requests overall smoother/fluid experience."
+    "Deleting a card removes it from the card gallery temporarily, but the portfolio does not update; after page refresh the card reappears in the gallery (deletion not persisted / state sync issue between portfolio and gallery)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-reduce-redundant-react-query-refetching-to-improve-perceived-performance-especially-for-cards-loading",
-      "title": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-reduce-the-number-of-backend-calls-needed-to-render-the-portfolio-page-by-introducing-a-single-backend-query-that-returns-a-portfolio-summary-snapshot-used-by-the-ui",
-      "title": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
+      "id": "feature-ensure-the-portfolio-ui-updates-immediately-after-a-card-is-deleted-from-the-gallery-using-the-same-underlying-data-source-as-the-gallery-react-query-and-or-ensuring-the-portfolio-snapshot-query-is-reliably-refetched-updated-after-deletion",
+      "title": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-tune-react-query-caching-and-invalidation-strategy-for-portfolio-related-data-so-mutations-do-not-cause-excessive-refetch-storms-and-long-post-mutation-loading-states",
-      "title": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+      "id": "feature-fix-gallery-state-synchronization-so-that-the-gallery-reflects-the-backend-as-the-source-of-truth-after-deletion-including-correctly-handling-optimistic-updates-and-ensuring-the-ui-reconciles-with-the-backend-result",
+      "title": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-ensure-all-user-facing-loading-error-text-introduced-or-modified-as-part-of-these-performance-fixes-is-in-english",
-      "title": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Fix card deletion so that deleting a card is persisted in the backend and the deleted card does not reappear in the card gallery after a full page refresh.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
   "projectName": "Sorare Portfolio",
   "clarification_mode": "instant",
   "clarification_rounds": 0

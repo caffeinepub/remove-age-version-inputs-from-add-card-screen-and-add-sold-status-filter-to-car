@@ -1,58 +1,54 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T23:19:03.068Z",
-  "summary": "REQ-1 appears implemented via React Query caching tweaks for userCards (non-zero staleTime, refetchOnMount=false) and UI changes to avoid full-page loading when cached data exists. REQ-2 is not evidenced as implemented on the backend per acceptance criteria: the backend snapshot type shown lacks several required aggregates, and no new backend query method returning the required portfolio summary is visible in the provided backend diff. Several non-performance-related additions appear (not requested), including Google OAuth support and various UI/feature enhancements.",
+  "generatedAt": "2026-02-16T23:29:13.912Z",
+  "summary": "Frontend changes add centralized, principal-scoped React Query keys and (per the diff summary) implement improved optimistic deletion handling with cache updates/rollback and portfolio snapshot invalidation. However, the diff does not provide evidence that the backend deletion operation was fixed to persist removals and return a clear error for missing card IDs. The diff also appears to introduce multiple unrelated UI/auth changes outside the deletion-sync scope.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Backend exposes one new query method that returns the Portfolio page’s required aggregates in one response (at minimum: totalInvested, totalReturns, investmentTotals, transactionSummary, soldCardBalance, craftedCardsCount, and (if needed) transactionGroups), and PortfolioPage uses it instead of many parallel queries.",
-      "reason": "In the provided backend diff, a `PortfolioSnapshot` type is shown but it does not include several required aggregates (e.g., `transactionSummary`, `soldCardBalance`, `craftedCardsCount`, `transactionGroups`), and no new backend query method returning this summary is visible in the truncated `backend/main.mo` excerpt.",
+      "id": "REQ-1",
+      "requirement": "[backend] Fix card deletion so deletion is persisted and deleted cards never reappear after refresh; return a clear error if deleting a non-existent card for that user.",
+      "reason": "The provided backend diff snippet shows types, card storage, getAllCardsForUser(), and addCard(), but does not show any delete operation implementation or changes ensuring deletion persistence or explicit error on non-existent IDs. With truncation and no delete-related evidence, this requirement cannot be confirmed as implemented.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/pages/PortfolioPage.tsx"
+        "backend/main.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Introduced a backend state migration file and schema-related changes (e.g., Card purchaseDate/saleDate type differences between migration and main actor).",
-      "reason": "Performance work explicitly aimed to avoid schema changes unless required; adding `backend/migration.mo` and altering persisted field types is not requested by the BuildRequest requirements.",
+      "description": "Added Google OAuth2 authentication hook and related login/logout flows.",
+      "reason": "BuildRequest explicitly lists changing authentication (Internet Identity) behavior as a non-goal; Google OAuth2 is not requested and may conflict with that constraint.",
       "evidence": [
-        "backend/migration.mo",
-        "backend/main.mo"
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication...\")"
       ]
     },
     {
-      "description": "Added Google OAuth2 authentication hook (new authentication method).",
-      "reason": "Explicit non-goal: \"Adding new product features unrelated to performance\" and \"new authentication methods.\"",
+      "description": "Broad UI/UX and copy changes unrelated to deletion sync (English translation across pages/components, new theme styling, Sorare branding header/footer, various loading/error UI changes).",
+      "reason": "Non-goal states no UI redesign beyond what is necessary to fix deletion inconsistencies; these changes appear unrelated to deletion persistence/sync.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/hooks/useGoogleAuth.ts)"
+        "frontend-file-summaries.txt (App.tsx, Header.tsx, Footer.tsx, PortfolioPage.tsx, CardsPage.tsx, index.css)"
       ]
     },
     {
-      "description": "Added/changed various unrelated UI/product features (profile setup modal that cannot be dismissed, Sorare branding header/footer, add/edit/sell/trade dialog feature enhancements like free-text rarity, autocomplete suggestions, multi-card trade additions, etc.).",
-      "reason": "Not requested by performance-focused requirements; falls under non-goal of adding unrelated product features/new fields/behavior.",
+      "description": "New/expanded portfolio and transaction UI/features (e.g., SoldCardsModal profit calculation changes; SellOrTradeDialog enhancements; derived transaction groups/counts behavior).",
+      "reason": "BuildRequest non-goals include adding new portfolio features; these appear to extend behavior beyond deletion-sync fixes.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions ProfileSetupModal, Header/Footer branding, AddCardDialog/EditCardDialog/SellOrTradeDialog changes)"
+        "frontend-file-summaries.txt (SoldCardsModal.tsx, SellOrTradeDialog.tsx, PortfolioPage.tsx notes)"
       ]
     },
     {
-      "description": "Changed global styling/theme (OKLCH color system, space-inspired theme).",
-      "reason": "Not requested by any performance requirement and constitutes unrelated UI theming work.",
+      "description": "Stubs for additional backend-dependent actions (mark as sold / record trade / revert trade) surfaced in frontend hooks.",
+      "reason": "Not requested; BuildRequest focuses only on deletion persistence and sync.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions frontend/src/index.css theme changes)"
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useQueries.ts\": \"stub implementations for useMarkCardAsSold, useRecordTradeTransaction, and useRevertTradeTransaction...\")"
       ]
     }
   ],
   "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/hooks/queryKeys.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/CardsPage.tsx",
-    "frontend/src/pages/PortfolioPage.tsx",
     "project_state.json"
   ]
 }

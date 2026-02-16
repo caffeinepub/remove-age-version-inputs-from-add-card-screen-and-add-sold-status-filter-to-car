@@ -2,33 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-reduce-redundant-react-query-refetching-to-improve-perceived-performance-especially-for-cards-loading",
-      "featureTitle": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
+      "featureId": "feature-ensure-the-portfolio-ui-updates-immediately-after-a-card-is-deleted-from-the-gallery-using-the-same-underlying-data-source-as-the-gallery-react-query-and-or-ensuring-the-portfolio-snapshot-query-is-reliably-refetched-updated-after-deletion",
+      "featureTitle": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/CardsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "http-outcalls@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-reduce-the-number-of-backend-calls-needed-to-render-the-portfolio-page-by-introducing-a-single-backend-query-that-returns-a-portfolio-summary-snapshot-used-by-the-ui",
-      "featureTitle": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/PortfolioPage.tsx"
+        "frontend/src/hooks/queryKeys.ts",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -46,11 +24,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-tune-react-query-caching-and-invalidation-strategy-for-portfolio-related-data-so-mutations-do-not-cause-excessive-refetch-storms-and-long-post-mutation-loading-states",
-      "featureTitle": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+      "featureId": "feature-fix-gallery-state-synchronization-so-that-the-gallery-reflects-the-backend-as-the-source-of-truth-after-deletion-including-correctly-handling-optimistic-updates-and-ensuring-the-ui-reconciles-with-the-backend-result",
+      "featureTitle": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/PortfolioPage.tsx"
+        "frontend/src/hooks/queryKeys.ts",
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -64,29 +42,6 @@
       ],
       "testIds": [
         "REQ-3"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-all-user-facing-loading-error-text-introduced-or-modified-as-part-of-these-performance-fixes-is-in-english",
-      "featureTitle": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
-      "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/CardsPage.tsx",
-        "frontend/src/pages/PortfolioPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "http-outcalls@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-4"
       ],
       "confidence": "high"
     }

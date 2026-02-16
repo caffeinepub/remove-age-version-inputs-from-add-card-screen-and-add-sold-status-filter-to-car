@@ -94,18 +94,6 @@ export const PortfolioSnapshot = IDL.Record({
   'totalBalance' : IDL.Float64,
   'totalReturnBalance' : IDL.Float64,
 });
-export const TransactionGroup = IDL.Record({
-  'sold' : IDL.Vec(Card),
-  'tradedReceived' : IDL.Vec(Card),
-  'forSale' : IDL.Vec(Card),
-  'tradedGiven' : IDL.Vec(Card),
-});
-export const TransactionSummary = IDL.Record({
-  'tradedGivenCount' : IDL.Nat,
-  'forSaleCount' : IDL.Nat,
-  'tradedReceivedCount' : IDL.Nat,
-  'soldCount' : IDL.Nat,
-});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -161,76 +149,20 @@ export const idlService = IDL.Service({
   'calculateTotalBalance' : IDL.Func([], [IDL.Float64], ['query']),
   'calculateTotalInvested' : IDL.Func([], [IDL.Float64], ['query']),
   'calculateTotalReturns' : IDL.Func([], [IDL.Float64], ['query']),
-  'countCraftedCards' : IDL.Func([], [IDL.Nat], ['query']),
   'deleteCard' : IDL.Func([CardId], [], []),
   'getAllCardsForUser' : IDL.Func([], [IDL.Vec(Card)], ['query']),
-  'getAllCardsForUserRPC' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Vec(Card)],
-      ['query'],
-    ),
   'getAllCardsWithUser' : IDL.Func([IDL.Principal], [CardWithUser], ['query']),
-  'getAllCraftedCards' : IDL.Func(
-      [],
-      [IDL.Record({ 'cards' : IDL.Vec(Card), 'count' : IDL.Nat })],
-      ['query'],
-    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getCardById' : IDL.Func([CardId], [IDL.Opt(Card)], ['query']),
-  'getCardsByTransactionType' : IDL.Func(
-      [TransactionType],
-      [IDL.Vec(Card)],
-      ['query'],
-    ),
-  'getCraftedCards' : IDL.Func([], [IDL.Vec(Card)], ['query']),
-  'getCraftedCardsWithBalance' : IDL.Func(
-      [],
-      [IDL.Record({ 'balance' : IDL.Nat, 'cards' : IDL.Vec(Card) })],
-      ['query'],
-    ),
   'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
   'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
-  'getSoldCards' : IDL.Func([IDL.Principal], [IDL.Vec(Card)], ['query']),
-  'getTradeSummary' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'totalReceived' : IDL.Nat,
-          'totalCards' : IDL.Nat,
-          'givenCards' : IDL.Vec(Card),
-          'totalGiven' : IDL.Nat,
-          'receivedCards' : IDL.Vec(Card),
-        }),
-      ],
-      ['query'],
-    ),
-  'getTransactionGroups' : IDL.Func([], [TransactionGroup], ['query']),
-  'getTransactionSummary' : IDL.Func([], [TransactionSummary], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getValidCardIds' : IDL.Func([], [IDL.Vec(CardId)], ['query']),
-  'initializeDefaultCardForUsers' : IDL.Func(
-      [IDL.Principal, IDL.Principal],
-      [],
-      [],
-    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'markCardAsSold' : IDL.Func([CardId, IDL.Float64, IDL.Opt(Time)], [], []),
-  'markCardAsSoldById' : IDL.Func([CardId, IDL.Float64, IDL.Opt(Time)], [], []),
-  'recordTradeTransaction' : IDL.Func(
-      [IDL.Vec(CardId), IDL.Vec(CardId)],
-      [],
-      [],
-    ),
-  'revertTradeTransaction' : IDL.Func([IDL.Vec(CardId)], [], []),
-  'saveBatchCards' : IDL.Func([IDL.Vec(Card)], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'swapCardIds' : IDL.Func([IDL.Principal, IDL.Principal], [], []),
-  'transferCardOwnership' : IDL.Func([CardId, IDL.Principal], [], []),
   'updateCard' : IDL.Func(
       [
         CardId,
@@ -252,7 +184,6 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
-  'updateCardTransactionType' : IDL.Func([CardId, TransactionType], [], []),
   'updateSalePrice' : IDL.Func([CardId, IDL.Float64], [], []),
 });
 
@@ -345,18 +276,6 @@ export const idlFactory = ({ IDL }) => {
     'totalBalance' : IDL.Float64,
     'totalReturnBalance' : IDL.Float64,
   });
-  const TransactionGroup = IDL.Record({
-    'sold' : IDL.Vec(Card),
-    'tradedReceived' : IDL.Vec(Card),
-    'forSale' : IDL.Vec(Card),
-    'tradedGiven' : IDL.Vec(Card),
-  });
-  const TransactionSummary = IDL.Record({
-    'tradedGivenCount' : IDL.Nat,
-    'forSaleCount' : IDL.Nat,
-    'tradedReceivedCount' : IDL.Nat,
-    'soldCount' : IDL.Nat,
-  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -412,84 +331,24 @@ export const idlFactory = ({ IDL }) => {
     'calculateTotalBalance' : IDL.Func([], [IDL.Float64], ['query']),
     'calculateTotalInvested' : IDL.Func([], [IDL.Float64], ['query']),
     'calculateTotalReturns' : IDL.Func([], [IDL.Float64], ['query']),
-    'countCraftedCards' : IDL.Func([], [IDL.Nat], ['query']),
     'deleteCard' : IDL.Func([CardId], [], []),
     'getAllCardsForUser' : IDL.Func([], [IDL.Vec(Card)], ['query']),
-    'getAllCardsForUserRPC' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Vec(Card)],
-        ['query'],
-      ),
     'getAllCardsWithUser' : IDL.Func(
         [IDL.Principal],
         [CardWithUser],
         ['query'],
       ),
-    'getAllCraftedCards' : IDL.Func(
-        [],
-        [IDL.Record({ 'cards' : IDL.Vec(Card), 'count' : IDL.Nat })],
-        ['query'],
-      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getCardById' : IDL.Func([CardId], [IDL.Opt(Card)], ['query']),
-    'getCardsByTransactionType' : IDL.Func(
-        [TransactionType],
-        [IDL.Vec(Card)],
-        ['query'],
-      ),
-    'getCraftedCards' : IDL.Func([], [IDL.Vec(Card)], ['query']),
-    'getCraftedCardsWithBalance' : IDL.Func(
-        [],
-        [IDL.Record({ 'balance' : IDL.Nat, 'cards' : IDL.Vec(Card) })],
-        ['query'],
-      ),
     'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
     'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
-    'getSoldCards' : IDL.Func([IDL.Principal], [IDL.Vec(Card)], ['query']),
-    'getTradeSummary' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'totalReceived' : IDL.Nat,
-            'totalCards' : IDL.Nat,
-            'givenCards' : IDL.Vec(Card),
-            'totalGiven' : IDL.Nat,
-            'receivedCards' : IDL.Vec(Card),
-          }),
-        ],
-        ['query'],
-      ),
-    'getTransactionGroups' : IDL.Func([], [TransactionGroup], ['query']),
-    'getTransactionSummary' : IDL.Func([], [TransactionSummary], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getValidCardIds' : IDL.Func([], [IDL.Vec(CardId)], ['query']),
-    'initializeDefaultCardForUsers' : IDL.Func(
-        [IDL.Principal, IDL.Principal],
-        [],
-        [],
-      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'markCardAsSold' : IDL.Func([CardId, IDL.Float64, IDL.Opt(Time)], [], []),
-    'markCardAsSoldById' : IDL.Func(
-        [CardId, IDL.Float64, IDL.Opt(Time)],
-        [],
-        [],
-      ),
-    'recordTradeTransaction' : IDL.Func(
-        [IDL.Vec(CardId), IDL.Vec(CardId)],
-        [],
-        [],
-      ),
-    'revertTradeTransaction' : IDL.Func([IDL.Vec(CardId)], [], []),
-    'saveBatchCards' : IDL.Func([IDL.Vec(Card)], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'swapCardIds' : IDL.Func([IDL.Principal, IDL.Principal], [], []),
-    'transferCardOwnership' : IDL.Func([CardId, IDL.Principal], [], []),
     'updateCard' : IDL.Func(
         [
           CardId,
@@ -511,7 +370,6 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
-    'updateCardTransactionType' : IDL.Func([CardId, TransactionType], [], []),
     'updateSalePrice' : IDL.Func([CardId, IDL.Float64], [], []),
   });
 };

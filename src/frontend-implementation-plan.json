@@ -1,93 +1,47 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Sorare Portfolio performance: React Query refetch reduction and snapshot-driven Portfolio",
+  "title": "React Query cache sync for card deletion between Gallery and Portfolio",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Reduce redundant React Query refetching for cards and show cached cards immediately during background refresh.",
-      "acceptanceCriteria": [
-        "Navigating between tabs (Portfolio/Cards) does not trigger an unconditional refetch of the cards list on every mount.",
-        "The cards query uses a non-zero staleTime and does not use refetchOnMount='always' unless there is a clear reason documented in code comments.",
-        "The Cards page shows previously cached cards immediately while a background refresh occurs (no blank state/spinner if cached data exists)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update the cards React Query configuration in useGetUserCards to avoid unconditional remount refetches (remove refetchOnMount='always'), set a non-zero staleTime, and ensure cached data is retained while refreshing in the background (e.g., keepPreviousData/placeholder behavior). Add a brief code comment documenting the chosen staleTime/refetch strategy."
-        },
-        {
-          "path": "frontend/src/pages/CardsPage.tsx",
-          "operation": "modify",
-          "description": "Adjust CardsPage loading UX to avoid showing a full blank/spinner when cached cards exist (differentiate isLoading vs isFetching and render cached list immediately with a scoped refresh indicator only when applicable). Ensure any loading text that is displayed is in English."
-        }
-      ]
-    },
-    {
       "id": "REQ-2",
-      "summary": "Render the Portfolio page using a single portfolio snapshot query (instead of multiple parallel aggregate queries).",
+      "summary": "Make Portfolio totals/metrics update immediately after a card is deleted from the gallery by updating/refetching the same React Query data sources.",
       "acceptanceCriteria": [
-        "Backend exposes one new query method that returns the Portfolio page’s required aggregates in one response (at minimum: totalInvested, totalReturns, investmentTotals, transactionSummary, soldCardBalance, craftedCardsCount, and (if needed by UI) transactionGroups).",
-        "PortfolioPage no longer issues separate parallel queries for each aggregate; it uses the new single query (or at most one additional query when strictly necessary).",
-        "On a cold load after login, the Portfolio page completes data loading with noticeably fewer network calls than before (verify by logging/Network panel: reduced from many calls to 1–2)."
+        "After deleting a card from the gallery, Portfolio totals/metrics that depend on cards update without requiring a manual page refresh.",
+        "Deleting a card triggers a reliable refresh/update of any portfolio-related cached data (e.g., the portfolio snapshot query) for the active principal.",
+        "No UI state shows the deleted card in any portfolio-derived lists or counts after deletion succeeds."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Introduce a new React Query hook (e.g., useGetPortfolioSnapshot) backed by the existing backend capability getPortfolioSnapshot, with principal-scoped query keys and sensible caching (non-zero staleTime). This hook should be suitable as the single data source for the Portfolio page."
+          "path": "frontend/src/hooks/queryKeys.ts",
+          "operation": "create",
+          "description": "Create a centralized, principal-scoped React Query key helper for cards and portfolio snapshot to ensure Gallery and Portfolio always reference the same underlying cache keys."
         },
         {
-          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Refactor PortfolioPage to use the new portfolio snapshot query as the primary data source, removing reliance on multiple aggregate hooks for initial render. Derive UI metrics from the snapshot where possible, minimizing additional queries. Ensure any modified loading/error strings are in English."
+          "description": "Update the delete-card mutation to (a) optimistically remove the card from both the userCards cache and the portfolioSnapshot cache for the active principal, (b) rollback both caches on failure, and (c) invalidate + refetch the principal-scoped userCards and portfolioSnapshot queries after success/settle so Portfolio updates immediately."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Tune React Query caching and invalidation for portfolio-related mutations to prevent refetch storms and reduce post-mutation blocking.",
+      "summary": "Ensure gallery deletion optimistic updates reconcile with backend results and keep cache key usage consistent (including principal scoping) to prevent divergence between Gallery and Portfolio.",
       "acceptanceCriteria": [
-        "After add/update/delete/sell/trade mutations, the UI updates without triggering a full cascade of immediate refetches across many keys; invalidations are consolidated to the minimal set needed (preferably the new portfolio snapshot key plus userCards).",
-        "Portfolio page does not block on refetching multiple independent queries after a mutation; loading indicators are scoped (e.g., sections) rather than a full-page spinner when possible.",
-        "React Query keys remain stable and continue to be scoped per principal (no cross-user cache bleed)."
+        "When a delete succeeds, the card remains removed from the gallery even after any automatic refetches complete.",
+        "When a delete fails, the gallery rolls back to the previous state and displays an error message (existing toast behavior is acceptable).",
+        "React Query cache keys used for optimistic updates, cancellation, and invalidation are consistent (including principal scoping) so gallery and portfolio cannot diverge."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Consolidate mutation onSuccess/onSettled invalidations to the minimal stable, principal-scoped keys (primarily ['portfolioSnapshot', principal] and ['userCards', principal]). Remove redundant invalidations (and avoid double invalidation patterns like invalidate onSuccess plus invalidate onSettled). Ensure keys remain principal-scoped and consistent across queries and mutations."
+          "description": "Fix React Query cancellation/invalidation to use the exact same principal-scoped keys as the queries (e.g., cancelQueries/invalidateQueries/refetchQueries for ['userCards', principal] and ['portfolioSnapshot', principal]) and store per-key snapshots in onMutate so rollback is reliable and cannot be overwritten by mismatched cache operations."
         },
         {
-          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "path": "frontend/src/hooks/queryKeys.ts",
           "operation": "modify",
-          "description": "Update PortfolioPage loading behavior to avoid a full-page blocking spinner during background refresh after mutations; prefer rendering last-known snapshot data while refresh is in-flight and optionally show scoped section-level loading states where relevant."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Ensure all user-facing loading/error text changed during performance work is in English.",
-      "acceptanceCriteria": [
-        "Any newly added UI strings (loading states, error messages, helper text) are in English.",
-        "If existing loading/error strings are modified during this work, the updated versions are in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Translate any user-facing strings affected by the refetch/caching/invalidation changes to English (e.g., thrown errors that surface in UI and toast messages in mutations). Keep non-user-facing console logs as-is if desired, but ensure anything displayed to users is English."
-        },
-        {
-          "path": "frontend/src/pages/CardsPage.tsx",
-          "operation": "modify",
-          "description": "Translate/loading empty-state and any adjusted loading copy introduced/modified while implementing the cached-data-first behavior to English."
-        },
-        {
-          "path": "frontend/src/pages/PortfolioPage.tsx",
-          "operation": "modify",
-          "description": "Translate Portfolio loading text and any new/modified helper text introduced during the snapshot refactor to English."
+          "description": "Ensure the query key helper covers all keys touched by delete flows (at minimum userCards and portfolioSnapshot) so optimistic updates, cancellation, invalidation, and refetch all use identical key construction."
         }
       ]
     }
