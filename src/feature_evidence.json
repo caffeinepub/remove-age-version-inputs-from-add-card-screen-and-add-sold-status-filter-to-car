@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-error-that-occurs-when-deleting-a-card-from-the-card-gallery-so-that-the-card-is-actually-deleted-and-the-ui-remains-stable-no-uncaught-errors-error-overlays",
-      "featureTitle": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
+      "featureId": "feature-reduce-redundant-react-query-refetching-to-improve-perceived-performance-especially-for-cards-loading",
+      "featureTitle": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
       "files": [
-        "frontend/src/components/CardItem.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/CardsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -24,12 +24,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-extend-the-card-edit-dialog-to-allow-changing-the-sale-price-when-the-card-already-has-a-sale-price-i-e-saleprice-is-present-and-ensure-the-portfolio-metrics-update-accordingly-after-saving",
-      "featureTitle": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
+      "featureId": "feature-reduce-the-number-of-backend-calls-needed-to-render-the-portfolio-page-by-introducing-a-single-backend-query-that-returns-a-portfolio-summary-snapshot-used-by-the-ui",
+      "featureTitle": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
       "files": [
-        "frontend/src/components/CardItem.tsx",
-        "frontend/src/components/EditCardDialog.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/PortfolioPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -43,6 +42,51 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-tune-react-query-caching-and-invalidation-strategy-for-portfolio-related-data-so-mutations-do-not-cause-excessive-refetch-storms-and-long-post-mutation-loading-states",
+      "featureTitle": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/PortfolioPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-all-user-facing-loading-error-text-introduced-or-modified-as-part-of-these-performance-fixes-is-in-english",
+      "featureTitle": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/CardsPage.tsx",
+        "frontend/src/pages/PortfolioPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

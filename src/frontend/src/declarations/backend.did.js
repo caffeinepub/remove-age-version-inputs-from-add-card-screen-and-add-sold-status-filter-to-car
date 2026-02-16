@@ -84,6 +84,16 @@ export const UserProfile = IDL.Record({
   'profileImage' : IDL.Opt(ExternalBlob),
   'name' : IDL.Text,
 });
+export const PortfolioSnapshot = IDL.Record({
+  'holdBalance' : IDL.Float64,
+  'totalInvested' : IDL.Float64,
+  'investmentTotals' : InvestmentTotals,
+  'allCards' : IDL.Vec(Card),
+  'portfolioTotal' : IDL.Float64,
+  'totalReturns' : IDL.Float64,
+  'totalBalance' : IDL.Float64,
+  'totalReturnBalance' : IDL.Float64,
+});
 export const TransactionGroup = IDL.Record({
   'sold' : IDL.Vec(Card),
   'tradedReceived' : IDL.Vec(Card),
@@ -179,6 +189,7 @@ export const idlService = IDL.Service({
       [IDL.Record({ 'balance' : IDL.Nat, 'cards' : IDL.Vec(Card) })],
       ['query'],
     ),
+  'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
   'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
   'getSoldCards' : IDL.Func([IDL.Principal], [IDL.Vec(Card)], ['query']),
   'getTradeSummary' : IDL.Func(
@@ -324,6 +335,16 @@ export const idlFactory = ({ IDL }) => {
     'profileImage' : IDL.Opt(ExternalBlob),
     'name' : IDL.Text,
   });
+  const PortfolioSnapshot = IDL.Record({
+    'holdBalance' : IDL.Float64,
+    'totalInvested' : IDL.Float64,
+    'investmentTotals' : InvestmentTotals,
+    'allCards' : IDL.Vec(Card),
+    'portfolioTotal' : IDL.Float64,
+    'totalReturns' : IDL.Float64,
+    'totalBalance' : IDL.Float64,
+    'totalReturnBalance' : IDL.Float64,
+  });
   const TransactionGroup = IDL.Record({
     'sold' : IDL.Vec(Card),
     'tradedReceived' : IDL.Vec(Card),
@@ -423,6 +444,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Record({ 'balance' : IDL.Nat, 'cards' : IDL.Vec(Card) })],
         ['query'],
       ),
+    'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
     'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
     'getSoldCards' : IDL.Func([IDL.Principal], [IDL.Vec(Card)], ['query']),
     'getTradeSummary' : IDL.Func(

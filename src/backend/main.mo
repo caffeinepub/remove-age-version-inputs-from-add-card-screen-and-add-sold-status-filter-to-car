@@ -10,7 +10,9 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -71,6 +73,22 @@ actor {
   public type UserProfile = {
     name : Text;
     profileImage : ?Storage.ExternalBlob;
+  };
+
+  public type InvestmentTotals = {
+    totalCashInvested : Float;
+    totalEthInvested : Float;
+  };
+
+  public type PortfolioSnapshot = {
+    investmentTotals : InvestmentTotals;
+    totalInvested : Float;
+    totalBalance : Float;
+    totalReturns : Float;
+    totalReturnBalance : Float;
+    portfolioTotal : Float;
+    holdBalance : Float;
+    allCards : [Card];
   };
 
   let cards = Map.empty<Principal, List.List<Card>>();
@@ -243,11 +261,6 @@ actor {
         cards.add(caller, filteredCards);
       };
     };
-  };
-
-  public type InvestmentTotals = {
-    totalCashInvested : Float;
-    totalEthInvested : Float;
   };
 
   public query ({ caller }) func calculateInvestmentTotals() : async InvestmentTotals {
@@ -885,4 +898,57 @@ actor {
       count = essenceCards.size();
     };
   };
+
+  // ------------------------------- NEW BACKEND FUNCTION BEGIN ---------------------------------
+  public query ({ caller }) func getPortfolioSnapshot() : async PortfolioSnapshot {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can get portfolio data");
+    };
+    let allCards = getAllCardsForUserInternal(caller);
+
+    var totalCash : Float = 0.0;
+    var totalEth : Float = 0.0;
+    var totalInvested : Float = 0.0;
+    var totalReturns : Float = 0.0;
+
+    for (card in allCards.values()) {
+      switch (card.paymentMethod) {
+        case (#cash) {
+          let cashValue = card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
+          totalCash += cashValue;
+          totalInvested += cashValue;
+        };
+        case (#eth) {
+          let ethValue = card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
+          totalEth += ethValue;
+          totalInvested += ethValue;
+        };
+        case (_) {};
+      };
+
+      if (card.transactionType == #sold) {
+        switch (card.salePrice) {
+          case (?price) { totalReturns += price };
+          case (_) {};
+        };
+      };
+    };
+
+    let investmentTotals : InvestmentTotals = {
+      totalCashInvested = totalCash;
+      totalEthInvested = totalEth;
+    };
+
+    {
+      investmentTotals;
+      totalInvested;
+      totalBalance = totalReturns - totalInvested;
+      totalReturns;
+      totalReturnBalance = totalReturns - totalInvested;
+      portfolioTotal = totalReturns + totalInvested;
+      holdBalance = totalInvested;
+      allCards;
+    };
+  };
+  //------------------------------ NEW BACKEND FUNCTION END -----------------------------------
 };

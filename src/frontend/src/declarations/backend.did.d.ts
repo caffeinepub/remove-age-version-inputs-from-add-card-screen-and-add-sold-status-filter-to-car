@@ -44,6 +44,16 @@ export type PaymentMethod = { 'eth' : null } |
   { 'trade' : null } |
   { 'cash' : null } |
   { 'essence' : null };
+export interface PortfolioSnapshot {
+  'holdBalance' : number,
+  'totalInvested' : number,
+  'investmentTotals' : InvestmentTotals,
+  'allCards' : Array<Card>,
+  'portfolioTotal' : number,
+  'totalReturns' : number,
+  'totalBalance' : number,
+  'totalReturnBalance' : number,
+}
 export type Position = { 'torwart' : null } |
   { 'verteidiger' : null } |
   { 'sturm' : null } |
@@ -147,6 +157,7 @@ export interface _SERVICE {
     [],
     { 'balance' : bigint, 'cards' : Array<Card> }
   >,
+  'getPortfolioSnapshot' : ActorMethod<[], PortfolioSnapshot>,
   'getSoldCardBalance' : ActorMethod<[], number>,
   'getSoldCards' : ActorMethod<[Principal], Array<Card>>,
   'getTradeSummary' : ActorMethod<

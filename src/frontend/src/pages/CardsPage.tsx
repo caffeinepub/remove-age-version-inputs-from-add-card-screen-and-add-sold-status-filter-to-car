@@ -19,18 +19,18 @@ const paymentMethodLabels: Record<PaymentMethod, string> = {
   [PaymentMethod.cash]: 'Cash',
   [PaymentMethod.eth]: 'Eth',
   [PaymentMethod.essence]: 'Essence',
-  [PaymentMethod.trade]: 'Tausch',
+  [PaymentMethod.trade]: 'Trade',
 };
 
 const positionLabels: Record<Position, string> = {
-  [Position.torwart]: 'Torwart',
-  [Position.verteidiger]: 'Verteidiger',
-  [Position.mittelfeld]: 'Mittelfeld',
-  [Position.sturm]: 'Sturm',
+  [Position.torwart]: 'Goalkeeper',
+  [Position.verteidiger]: 'Defender',
+  [Position.mittelfeld]: 'Midfielder',
+  [Position.sturm]: 'Forward',
 };
 
 export default function CardsPage() {
-  const { data: cards = [], isLoading } = useGetUserCards();
+  const { data: cards = [], isLoading, isFetching } = useGetUserCards();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   
   // Filter states
@@ -116,7 +116,7 @@ export default function CardsPage() {
       if (selectedSoldStatus === 'sold' && card.transactionType !== TransactionType.sold) {
         return false;
       }
-      if (selectedSoldStatus === 'notSold' && card.transactionType === TransactionType.sold) {
+      if (selectedSoldStatus === 'active' && card.transactionType === TransactionType.sold) {
         return false;
       }
 
@@ -124,13 +124,11 @@ export default function CardsPage() {
     });
   }, [cards, searchQuery, selectedSeason, selectedLeague, selectedCountry, selectedClub, selectedVersion, selectedPosition, selectedPaymentMethod, selectedSoldStatus]);
 
-  // Check if any filters are active
   const hasActiveFilters = searchQuery || selectedSeason !== 'all' || selectedLeague !== 'all' || 
-                          selectedCountry !== 'all' || selectedClub !== 'all' || selectedVersion !== 'all' ||
-                          selectedPosition !== 'all' || selectedPaymentMethod !== 'all' || selectedSoldStatus !== 'all';
+    selectedCountry !== 'all' || selectedClub !== 'all' || selectedVersion !== 'all' || 
+    selectedPosition !== 'all' || selectedPaymentMethod !== 'all' || selectedSoldStatus !== 'all';
 
-  // Reset all filters
-  const resetFilters = () => {
+  const clearAllFilters = () => {
     setSearchQuery('');
     setSelectedSeason('all');
     setSelectedLeague('all');
@@ -142,210 +140,216 @@ export default function CardsPage() {
     setSelectedSoldStatus('all');
   };
 
+  // Show loading only on initial load
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Lädt Karten...</p>
+          <p className="text-muted-foreground">Loading cards...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6">
+      {/* Background refresh indicator */}
+      {isFetching && !isLoading && (
+        <div className="fixed top-20 right-4 z-50 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Refreshing...
+        </div>
+      )}
+
+      {/* Header with Add Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Meine Karten</h2>
+          <h1 className="text-3xl font-bold">My Cards</h1>
           <p className="text-muted-foreground mt-1">
-            {filteredCards.length} {hasActiveFilters ? 'gefilterte' : ''} Karte(n) {hasActiveFilters && `von ${cards.length} insgesamt`}
+            {filteredCards.length} {filteredCards.length === 1 ? 'card' : 'cards'}
+            {hasActiveFilters && ` (filtered from ${cards.length})`}
           </p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)} size="lg">
           <Plus className="w-5 h-5 mr-2" />
-          Karte hinzufügen
+          Add Card
         </Button>
       </div>
 
-      {/* Search and Filter Section */}
-      {cards.length > 0 && (
-        <div className="space-y-4 p-4 border rounded-lg bg-card">
-          {/* Search Bar */}
-          <div className="space-y-2">
-            <Label htmlFor="search">Suche nach Name</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="search"
-                type="text"
-                placeholder="Kartenname eingeben..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Filter Dropdowns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Season Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="season-filter">Saison</Label>
-              <Select value={selectedSeason} onValueChange={setSelectedSeason}>
-                <SelectTrigger id="season-filter">
-                  <SelectValue placeholder="Alle Saisons" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Saisons</SelectItem>
-                  {filterOptions.seasons.map(season => (
-                    <SelectItem key={season} value={season}>{season}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* League Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="league-filter">Liga</Label>
-              <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-                <SelectTrigger id="league-filter">
-                  <SelectValue placeholder="Alle Ligen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Ligen</SelectItem>
-                  {filterOptions.leagues.map(league => (
-                    <SelectItem key={league} value={league}>{league}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Country Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="country-filter">Land</Label>
-              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                <SelectTrigger id="country-filter">
-                  <SelectValue placeholder="Alle Länder" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Länder</SelectItem>
-                  {filterOptions.countries.map(country => (
-                    <SelectItem key={country} value={country}>{country}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Club Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="club-filter">Club</Label>
-              <Select value={selectedClub} onValueChange={setSelectedClub}>
-                <SelectTrigger id="club-filter">
-                  <SelectValue placeholder="Alle Clubs" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Clubs</SelectItem>
-                  {filterOptions.clubs.map(club => (
-                    <SelectItem key={club} value={club}>{club}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Version Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="version-filter">Version</Label>
-              <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                <SelectTrigger id="version-filter">
-                  <SelectValue placeholder="Alle Versionen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Versionen</SelectItem>
-                  {filterOptions.versions.map(version => (
-                    <SelectItem key={version} value={version}>{version}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Position Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="position-filter">Position</Label>
-              <Select value={selectedPosition} onValueChange={setSelectedPosition}>
-                <SelectTrigger id="position-filter">
-                  <SelectValue placeholder="Alle Positionen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Positionen</SelectItem>
-                  {Object.entries(positionLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Payment Method Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="payment-filter">Bezahlart</Label>
-              <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
-                <SelectTrigger id="payment-filter">
-                  <SelectValue placeholder="Alle Bezahlarten" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Bezahlarten</SelectItem>
-                  {Object.entries(paymentMethodLabels).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Sold Status Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="sold-filter">Verkaufsstatus</Label>
-              <Select value={selectedSoldStatus} onValueChange={setSelectedSoldStatus}>
-                <SelectTrigger id="sold-filter">
-                  <SelectValue placeholder="Alle Karten" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Karten</SelectItem>
-                  <SelectItem value="sold">Verkauft</SelectItem>
-                  <SelectItem value="notSold">Nicht verkauft</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Reset Filters Button */}
-          {hasActiveFilters && (
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={resetFilters}>
-                <X className="w-4 h-4 mr-2" />
-                Filter zurücksetzen
-              </Button>
-            </div>
-          )}
+      {/* Search and Filters */}
+      <div className="space-y-4">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <Input
+            placeholder="Search cards by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
-      )}
+
+        {/* Filter Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Season Filter */}
+          <div className="space-y-2">
+            <Label>Season</Label>
+            <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+              <SelectTrigger>
+                <SelectValue placeholder="All seasons" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All seasons</SelectItem>
+                {filterOptions.seasons.map(season => (
+                  <SelectItem key={season} value={season}>{season}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* League Filter */}
+          <div className="space-y-2">
+            <Label>League</Label>
+            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+              <SelectTrigger>
+                <SelectValue placeholder="All leagues" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All leagues</SelectItem>
+                {filterOptions.leagues.map(league => (
+                  <SelectItem key={league} value={league}>{league}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Country Filter */}
+          <div className="space-y-2">
+            <Label>Country</Label>
+            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+              <SelectTrigger>
+                <SelectValue placeholder="All countries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All countries</SelectItem>
+                {filterOptions.countries.map(country => (
+                  <SelectItem key={country} value={country}>{country}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Club Filter */}
+          <div className="space-y-2">
+            <Label>Club</Label>
+            <Select value={selectedClub} onValueChange={setSelectedClub}>
+              <SelectTrigger>
+                <SelectValue placeholder="All clubs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All clubs</SelectItem>
+                {filterOptions.clubs.map(club => (
+                  <SelectItem key={club} value={club}>{club}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Version Filter */}
+          <div className="space-y-2">
+            <Label>Version</Label>
+            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+              <SelectTrigger>
+                <SelectValue placeholder="All versions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All versions</SelectItem>
+                {filterOptions.versions.map(version => (
+                  <SelectItem key={version} value={version}>{version}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Position Filter */}
+          <div className="space-y-2">
+            <Label>Position</Label>
+            <Select value={selectedPosition} onValueChange={setSelectedPosition}>
+              <SelectTrigger>
+                <SelectValue placeholder="All positions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All positions</SelectItem>
+                {Object.entries(positionLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Payment Method Filter */}
+          <div className="space-y-2">
+            <Label>Payment Method</Label>
+            <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="All methods" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All methods</SelectItem>
+                {Object.entries(paymentMethodLabels).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sold Status Filter */}
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={selectedSoldStatus} onValueChange={setSelectedSoldStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="All cards" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All cards</SelectItem>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="sold">Sold only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Clear Filters Button */}
+        {hasActiveFilters && (
+          <Button variant="outline" onClick={clearAllFilters} className="w-full md:w-auto">
+            <X className="w-4 h-4 mr-2" />
+            Clear all filters
+          </Button>
+        )}
+      </div>
 
       {/* Cards Grid */}
       {filteredCards.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
           <p className="text-muted-foreground text-lg">
-            {cards.length === 0 
-              ? 'Noch keine Karten vorhanden. Füge deine erste Karte hinzu!'
-              : 'Keine Karten gefunden, die den Filterkriterien entsprechen.'}
+            {hasActiveFilters ? 'No cards match your filters' : 'No cards yet. Add your first card to get started!'}
           </p>
+          {hasActiveFilters && (
+            <Button variant="outline" onClick={clearAllFilters} className="mt-4">
+              Clear filters
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCards.map(card => (
             <CardItem key={card.id.toString()} card={card} />
           ))}
         </div>
       )}
 
+      {/* Add Card Dialog */}
       <AddCardDialog 
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen}

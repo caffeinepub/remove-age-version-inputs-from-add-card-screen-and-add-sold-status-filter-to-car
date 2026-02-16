@@ -62,6 +62,16 @@ export interface CardWithUser {
     cards: Array<Card>;
     user: Principal;
 }
+export interface PortfolioSnapshot {
+    holdBalance: number;
+    totalInvested: number;
+    investmentTotals: InvestmentTotals;
+    allCards: Array<Card>;
+    portfolioTotal: number;
+    totalReturns: number;
+    totalBalance: number;
+    totalReturnBalance: number;
+}
 export type CardId = bigint;
 export interface UserProfile {
     profileImage?: ExternalBlob;
@@ -115,6 +125,7 @@ export interface backendInterface {
         balance: bigint;
         cards: Array<Card>;
     }>;
+    getPortfolioSnapshot(): Promise<PortfolioSnapshot>;
     getSoldCardBalance(): Promise<number>;
     getSoldCards(user: Principal): Promise<Array<Card>>;
     getTradeSummary(): Promise<{

@@ -1,55 +1,89 @@
 {
   "kind": "build_request",
-  "title": "Fix card deletion error and allow editing sale price in card editor",
-  "projectName": "Card Portfolio",
-  "priority": "normal",
+  "title": "Improve app performance and reduce long load times",
+  "projectName": "Sorare Portfolio",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
-      "target": "both",
+      "text": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-1"
         ],
         "quotes": [
-          "Beim löschen einer Karte aus der kartengalerie kommt eine Fehlermeldung. Die Karte soll gelöscht werden und die Änderungen im Portfolio übernommen werden."
+          "Insgesamt soll alles flüssiger sein. Die ladezeiten sind teilweise sehr lange. Bitte beheben."
         ]
       },
       "acceptanceCriteria": [
-        "Deleting a card from the card gallery removes it from the cards list after the mutation completes.",
-        "No frontend error boundary screen, console uncaught exception, or backend trap is triggered during/after deletion for a valid card.",
-        "After deletion, any portfolio statistics that depend on the user’s cards reflect the deletion without requiring a manual page refresh (e.g., totals, transaction summary/groups, sold-card balance)."
+        "Navigating between tabs (Portfolio/Cards) does not trigger an unconditional refetch of the cards list on every mount.",
+        "The cards query uses a non-zero staleTime and does not use refetchOnMount='always' unless there is a clear reason documented in code comments.",
+        "The Cards page shows previously cached cards immediately while a background refresh occurs (no blank state/spinner if cached data exists)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
+      "text": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-user-1"
         ],
         "quotes": [
-          "Außerdem soll man wenn man eine Karte bearbeitet auch den Verkaufspreis ändern können, falls es einen gibt. Die Änderungen ebenfalls im Portfolio aktualisieren."
+          "Insgesamt soll alles flüssiger sein. Die ladezeiten sind teilweise sehr lange. Bitte beheben."
         ]
       },
       "acceptanceCriteria": [
-        "For cards with an existing salePrice, the edit dialog shows an editable sale price field prefilled with the current value.",
-        "Saving edits persists the updated sale price in the backend (salePrice changes are reflected when reloading cards).",
-        "After saving, the portfolio view reflects the updated sale price (e.g., total returns / sold-card balance) without requiring a manual refresh.",
-        "For cards without an existing salePrice, the edit dialog does not show the sale price field (or clearly keeps it disabled/hidden)."
+        "Backend exposes one new query method that returns the Portfolio page’s required aggregates in one response (at minimum: totalInvested, totalReturns, investmentTotals, transactionSummary, soldCardBalance, craftedCardsCount, and (if needed by UI) transactionGroups).",
+        "PortfolioPage no longer issues separate parallel queries for each aggregate; it uses the new single query (or at most one additional query when strictly necessary).",
+        "On a cold load after login, the Portfolio page completes data loading with noticeably fewer network calls than before (verify by logging/Network panel: reduced from many calls to 1–2)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "Insgesamt soll alles flüssiger sein. Die ladezeiten sind teilweise sehr lange. Bitte beheben."
+        ]
+      },
+      "acceptanceCriteria": [
+        "After add/update/delete/sell/trade mutations, the UI updates without triggering a full cascade of immediate refetches across many keys; invalidations are consolidated to the minimal set needed (preferably the new portfolio snapshot key plus userCards).",
+        "Portfolio page does not block on refetching multiple independent queries after a mutation; loading indicators are scoped (e.g., sections) rather than a full-page spinner when possible.",
+        "React Query keys remain stable and continue to be scoped per principal (no cross-user cache bleed)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-user-1"
+        ],
+        "quotes": [
+          "Use English for any user-facing text in the build request."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Any newly added UI strings (loading states, error messages, helper text) are in English.",
+        "If existing loading/error strings are modified during this work, the updated versions are in English."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not modify files under frontend/src/components/ui or any other paths listed as immutable in SYSTEM_CONTEXT."
+    "Do not edit files under frontend/src/components/ui (Shadcn UI components are read-only).",
+    "Do not edit immutable hook entrypoints listed in SYSTEM_CONTEXT (compose around them instead).",
+    "Backend must remain a single Motoko actor in backend/main.mo; introduce backend/migration.mo only if state schema changes are required (avoid schema changes for performance work if possible)."
   ],
   "nonGoals": [
-    "Adding third-party authentication methods beyond Internet Identity.",
-    "Introducing external databases or off-chain storage.",
-    "Changing transaction type semantics (e.g., automatically marking cards sold when editing sale price) unless required to fix the deletion bug."
+    "Adding new product features unrelated to performance (e.g., batch editing, new card fields, new authentication methods).",
+    "Introducing external databases, third-party caching services, or non-supported backend stacks."
   ],
   "imageRequirements": {
     "required": [],

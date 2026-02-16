@@ -1,59 +1,58 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T23:10:25.505Z",
-  "summary": "REQ-2 appears to be implemented via a conditional sale price field in the edit dialog plus corresponding mutation support and backend sale price update logic. REQ-1 appears to be addressed via optimistic delete handling and cache invalidation, but the diff evidence is indirect (backend delete implementation is not shown in the provided backend snippet). Several unrelated features were added/changed (not requested), including Google OAuth support and various UI/portfolio/app changes.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-16T23:19:03.068Z",
+  "summary": "REQ-1 appears implemented via React Query caching tweaks for userCards (non-zero staleTime, refetchOnMount=false) and UI changes to avoid full-page loading when cached data exists. REQ-2 is not evidenced as implemented on the backend per acceptance criteria: the backend snapshot type shown lacks several required aggregates, and no new backend query method returning the required portfolio summary is visible in the provided backend diff. Several non-performance-related additions appear (not requested), including Google OAuth support and various UI/feature enhancements.",
+  "missing_requirements": [
+    {
+      "id": "REQ-2",
+      "requirement": "Backend exposes one new query method that returns the Portfolio page’s required aggregates in one response (at minimum: totalInvested, totalReturns, investmentTotals, transactionSummary, soldCardBalance, craftedCardsCount, and (if needed) transactionGroups), and PortfolioPage uses it instead of many parallel queries.",
+      "reason": "In the provided backend diff, a `PortfolioSnapshot` type is shown but it does not include several required aggregates (e.g., `transactionSummary`, `soldCardBalance`, `craftedCardsCount`, `transactionGroups`), and no new backend query method returning this summary is visible in the truncated `backend/main.mo` excerpt.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/pages/PortfolioPage.tsx"
+      ]
+    }
+  ],
   "hallucinated_features": [
     {
-      "description": "Added Google OAuth2 authentication support (beyond Internet Identity).",
-      "reason": "Explicitly listed as a non-goal: “Adding third-party authentication methods beyond Internet Identity.”",
+      "description": "Introduced a backend state migration file and schema-related changes (e.g., Card purchaseDate/saleDate type differences between migration and main actor).",
+      "reason": "Performance work explicitly aimed to avoid schema changes unless required; adding `backend/migration.mo` and altering persisted field types is not requested by the BuildRequest requirements.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication ...\")"
+        "backend/migration.mo",
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Introduced caffeineAdminToken URL/session parameter extraction and related routing/state behavior.",
-      "reason": "Not requested by REQ-1 or REQ-2; unrelated to card deletion or sale price editing.",
+      "description": "Added Google OAuth2 authentication hook (new authentication method).",
+      "reason": "Explicit non-goal: \"Adding new product features unrelated to performance\" and \"new authentication methods.\"",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"early caffeineAdminToken extraction on mount ...\")",
-        "frontend/src/utils/urlParams.ts"
+        "frontend-file-summaries.txt (mentions frontend/src/hooks/useGoogleAuth.ts)"
       ]
     },
     {
-      "description": "Major UI/UX and portfolio dashboard changes (new sections/metrics/modals and behavior changes beyond ensuring metrics update after delete/edit).",
-      "reason": "Not requested by REQ-1/REQ-2, which only require stability and metric updates after deletion/editing salePrice.",
+      "description": "Added/changed various unrelated UI/product features (profile setup modal that cannot be dismissed, Sorare branding header/footer, add/edit/sell/trade dialog feature enhancements like free-text rarity, autocomplete suggestions, multi-card trade additions, etc.).",
+      "reason": "Not requested by performance-focused requirements; falls under non-goal of adding unrelated product features/new fields/behavior.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/pages/PortfolioPage.tsx\": \"... sold-cards balance overview section with four metrics ...\")",
-        "frontend-file-summaries.txt (\"frontend/src/components/SoldCardsModal.tsx\": \"... correctly treating Essence-purchased cards as zero monetary cost ...\")",
-        "frontend-file-summaries.txt (\"frontend/src/components/CraftedCardsModal.tsx\": \"Modal dialog displaying all Essence-crafted cards ...\")"
+        "frontend-file-summaries.txt (mentions ProfileSetupModal, Header/Footer branding, AddCardDialog/EditCardDialog/SellOrTradeDialog changes)"
       ]
     },
     {
-      "description": "Global theme/style overhaul using an OKLCH color system and space-inspired theme.",
-      "reason": "Not requested by REQ-1/REQ-2.",
+      "description": "Changed global styling/theme (OKLCH color system, space-inspired theme).",
+      "reason": "Not requested by any performance requirement and constitutes unrelated UI theming work.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/index.css\": \"Global styles with OKLCH color system ...\")"
-      ]
-    },
-    {
-      "description": "Additional logging, retry behavior changes, and actor initialization error UI/state machine changes.",
-      "reason": "Not requested by REQ-1/REQ-2; tangential to deletion/sale price editing.",
-      "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/hooks/useActor.ts\": \"Actor initialization hook with disabled automatic retries ...\")",
-        "frontend/src/hooks/useQueries.ts (added extensive logging/retry configuration in shown sections)",
-        "frontend-file-summaries.txt (\"frontend/src/App.tsx\": \"... improved actor initialization error UI ...\")"
+        "frontend-file-summaries.txt (mentions frontend/src/index.css theme changes)"
       ]
     }
   ],
   "confidence": 0.66,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/CardItem.tsx",
-    "frontend/src/components/EditCardDialog.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/utils/urlParams.ts",
+    "frontend/src/pages/CardsPage.tsx",
+    "frontend/src/pages/PortfolioPage.tsx",
     "project_state.json"
   ]
 }

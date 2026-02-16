@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import { type Card, type UserProfile, type CardId, PaymentMethod, Position, type InvestmentTotals, type TransactionSummary, type TransactionGroup, type Time } from '../backend';
+import { type Card, type UserProfile, type CardId, PaymentMethod, Position, type InvestmentTotals, type TransactionSummary, type TransactionGroup, type Time, type PortfolioSnapshot } from '../backend';
 import { toast } from 'sonner';
 
 // User Profile Queries
@@ -14,11 +14,11 @@ export function useGetCallerUserProfile() {
     queryFn: async () => {
       if (!actor) {
         console.warn('Actor not available for profile query');
-        throw new Error('Actor nicht verfügbar');
+        throw new Error('Actor not available');
       }
       if (!identity) {
         console.warn('Identity not available for profile query');
-        throw new Error('Nicht angemeldet');
+        throw new Error('Not logged in');
       }
       
       try {
@@ -54,22 +54,23 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.saveCallerUserProfile(profile);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-      toast.success('Profil erfolgreich gespeichert');
+      toast.success('Profile saved successfully');
     },
     onError: (error: Error) => {
       console.error('Error saving profile:', error);
-      toast.error(`Fehler beim Speichern: ${error.message}`);
+      toast.error(`Error saving: ${error.message}`);
     },
   });
 }
 
 // Card Queries
+// Caching strategy: staleTime 60s to avoid refetch on every tab switch, no refetchOnMount='always'
 export function useGetUserCards() {
   const { actor, isFetching } = useActor();
   const { identity } = useInternetIdentity();
@@ -98,8 +99,10 @@ export function useGetUserCards() {
     enabled: !!actor && !isFetching && !!identity,
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 3000),
-    refetchOnMount: 'always',
-    staleTime: 0,
+    // Performance: Cache cards for 60s to avoid refetch on tab navigation
+    staleTime: 60000,
+    // Performance: Only refetch if data is stale, not on every mount
+    refetchOnMount: false,
   });
 }
 
@@ -140,8 +143,8 @@ export function useAddCard() {
       version: string;
       season: string;
     }) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.addCard(
         name,
         rarity,
@@ -161,21 +164,15 @@ export function useAddCard() {
       );
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Karte erfolgreich hinzugefügt');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Card added successfully');
     },
     onError: (error: Error) => {
       console.error('Error adding card:', error);
-      toast.error(`Fehler beim Hinzufügen: ${error.message}`);
+      toast.error(`Error adding: ${error.message}`);
     },
   });
 }
@@ -221,8 +218,8 @@ export function useUpdateCard() {
       season: string;
       salePrice?: number | null;
     }) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       
       // First update the card fields
       await actor.updateCard(
@@ -249,21 +246,15 @@ export function useUpdateCard() {
       }
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Karte erfolgreich aktualisiert');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Card updated successfully');
     },
     onError: (error: Error) => {
       console.error('Error updating card:', error);
-      toast.error(`Fehler beim Aktualisieren: ${error.message}`);
+      toast.error(`Error updating: ${error.message}`);
     },
   });
 }
@@ -275,8 +266,8 @@ export function useDeleteCard() {
 
   return useMutation({
     mutationFn: async (cardId: CardId) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.deleteCard(cardId);
     },
     onMutate: async (cardId: CardId) => {
@@ -306,24 +297,14 @@ export function useDeleteCard() {
         );
       }
       console.error('Error deleting card:', error);
-      toast.error(`Fehler beim Löschen: ${error.message}`);
+      toast.error(`Error deleting: ${error.message}`);
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalInvested'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['investmentTotals'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCardsCount'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['craftedCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Karte erfolgreich gelöscht');
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['userCards'] });
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Card deleted successfully');
     },
   });
 }
@@ -335,21 +316,20 @@ export function useUpdateSalePrice() {
 
   return useMutation({
     mutationFn: async ({ cardId, newSalePrice }: { cardId: CardId; newSalePrice: number }) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.updateSalePrice(cardId, newSalePrice);
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Verkaufspreis aktualisiert');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Sale price updated');
     },
     onError: (error: Error) => {
       console.error('Error updating sale price:', error);
-      toast.error(`Fehler beim Aktualisieren: ${error.message}`);
+      toast.error(`Error updating: ${error.message}`);
     },
   });
 }
@@ -361,22 +341,20 @@ export function useMarkCardAsSold() {
 
   return useMutation({
     mutationFn: async ({ cardId, salePrice, saleDate }: { cardId: CardId; salePrice: number; saleDate: Time | null }) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.markCardAsSold(cardId, salePrice, saleDate);
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['totalReturns'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Karte als verkauft markiert');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Card marked as sold');
     },
     onError: (error: Error) => {
       console.error('Error marking card as sold:', error);
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     },
   });
 }
@@ -388,21 +366,20 @@ export function useRecordTradeTransaction() {
 
   return useMutation({
     mutationFn: async ({ givenCardIds, receivedCardIds }: { givenCardIds: CardId[]; receivedCardIds: CardId[] }) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.recordTradeTransaction(givenCardIds, receivedCardIds);
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Tausch erfolgreich aufgezeichnet');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Trade recorded successfully');
     },
     onError: (error: Error) => {
       console.error('Error recording trade:', error);
-      toast.error(`Fehler beim Aufzeichnen: ${error.message}`);
+      toast.error(`Error recording: ${error.message}`);
     },
   });
 }
@@ -414,26 +391,66 @@ export function useRevertTradeTransaction() {
 
   return useMutation({
     mutationFn: async (cardIds: CardId[]) => {
-      if (!actor) throw new Error('Actor nicht verfügbar');
-      if (!identity) throw new Error('Nicht angemeldet');
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
       return actor.revertTradeTransaction(cardIds);
     },
     onSuccess: () => {
-      // Trigger invalidations in background without blocking
-      queryClient.invalidateQueries({ queryKey: ['userCards'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionSummary'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['transactionGroups'], refetchType: 'active' });
-      queryClient.invalidateQueries({ queryKey: ['soldCardBalance'], refetchType: 'active' });
-      toast.success('Tausch erfolgreich rückgängig gemacht');
+      const principal = identity?.getPrincipal().toString();
+      // Consolidated invalidation: only portfolioSnapshot and userCards
+      queryClient.invalidateQueries({ queryKey: ['portfolioSnapshot', principal] });
+      queryClient.invalidateQueries({ queryKey: ['userCards', principal] });
+      toast.success('Trade reverted successfully');
     },
     onError: (error: Error) => {
       console.error('Error reverting trade:', error);
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     },
   });
 }
 
-// Portfolio Queries
+// Portfolio Snapshot Query - Single query for all portfolio data
+export function useGetPortfolioSnapshot() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+
+  return useQuery<PortfolioSnapshot>({
+    queryKey: ['portfolioSnapshot', identity?.getPrincipal().toString()],
+    queryFn: async () => {
+      if (!actor) {
+        return {
+          investmentTotals: { totalCashInvested: 0, totalEthInvested: 0 },
+          totalInvested: 0,
+          totalBalance: 0,
+          totalReturns: 0,
+          totalReturnBalance: 0,
+          portfolioTotal: 0,
+          holdBalance: 0,
+          allCards: [],
+        };
+      }
+      if (!identity) {
+        return {
+          investmentTotals: { totalCashInvested: 0, totalEthInvested: 0 },
+          totalInvested: 0,
+          totalBalance: 0,
+          totalReturns: 0,
+          totalReturnBalance: 0,
+          portfolioTotal: 0,
+          holdBalance: 0,
+          allCards: [],
+        };
+      }
+      return actor.getPortfolioSnapshot();
+    },
+    enabled: !!actor && !isFetching && !!identity,
+    // Cache for 30s to reduce redundant fetches
+    staleTime: 30000,
+  });
+}
+
+// Legacy queries kept for backward compatibility but deprecated
+// These are now derived from portfolioSnapshot where possible
 export function useCalculateTotalInvested() {
   const { actor, isFetching } = useActor();
   const { identity } = useInternetIdentity();
@@ -446,6 +463,7 @@ export function useCalculateTotalInvested() {
       return actor.calculateTotalInvested();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -461,6 +479,7 @@ export function useCalculateTotalReturns() {
       return actor.calculateTotalReturns();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -476,6 +495,7 @@ export function useCalculateInvestmentTotals() {
       return actor.calculateInvestmentTotals();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -491,6 +511,7 @@ export function useGetTransactionSummary() {
       return actor.getTransactionSummary();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -506,6 +527,7 @@ export function useGetTransactionGroups() {
       return actor.getTransactionGroups();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -521,6 +543,7 @@ export function useCountCraftedCards() {
       return actor.countCraftedCards();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -536,6 +559,7 @@ export function useGetCraftedCards() {
       return actor.getCraftedCards();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }
 
@@ -551,5 +575,6 @@ export function useGetSoldCardBalance() {
       return actor.getSoldCardBalance();
     },
     enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
   });
 }

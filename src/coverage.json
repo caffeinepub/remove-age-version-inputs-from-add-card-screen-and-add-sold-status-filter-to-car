@@ -1,58 +1,85 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T23:10:25.507Z",
+  "generatedAt": "2026-02-16T23:19:03.071Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
+        "summary": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/CardItem.tsx",
-          "frontend/src/pages/PortfolioPage.tsx"
+          "frontend/src/pages/CardsPage.tsx"
         ],
         "matchedFiles": [
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/CardItem.tsx"
+          "frontend/src/pages/CardsPage.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
+        "summary": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/EditCardDialog.tsx",
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/CardItem.tsx"
+          "frontend/src/pages/PortfolioPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/EditCardDialog.tsx",
           "frontend/src/hooks/useQueries.ts",
-          "frontend/src/components/CardItem.tsx"
+          "frontend/src/pages/PortfolioPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/PortfolioPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/PortfolioPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/CardsPage.tsx",
+          "frontend/src/pages/PortfolioPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/CardsPage.tsx",
+          "frontend/src/pages/PortfolioPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/CardItem.tsx",
-    "frontend/src/components/EditCardDialog.tsx",
-    "frontend/src/config.ts",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/utils/urlParams.ts",
+    "frontend/src/pages/CardsPage.tsx",
+    "frontend/src/pages/PortfolioPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

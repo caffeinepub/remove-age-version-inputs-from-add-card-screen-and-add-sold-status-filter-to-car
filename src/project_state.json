@@ -4,42 +4,45 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Deleting a card from the card gallery triggers an error instead of deleting and updating the portfolio."
+    "App performance issue: some load times are very long; user requests overall smoother/fluid experience."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-error-that-occurs-when-deleting-a-card-from-the-card-gallery-so-that-the-card-is-actually-deleted-and-the-ui-remains-stable-no-uncaught-errors-error-overlays",
-      "title": "Fix the error that occurs when deleting a card from the card gallery so that the card is actually deleted and the UI remains stable (no uncaught errors / error overlays).",
+      "id": "feature-reduce-redundant-react-query-refetching-to-improve-perceived-performance-especially-for-cards-loading",
+      "title": "Reduce redundant React Query refetching to improve perceived performance, especially for cards loading.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-extend-the-card-edit-dialog-to-allow-changing-the-sale-price-when-the-card-already-has-a-sale-price-i-e-saleprice-is-present-and-ensure-the-portfolio-metrics-update-accordingly-after-saving",
-      "title": "Extend the card edit dialog to allow changing the sale price when the card already has a sale price (i.e., salePrice is present), and ensure the portfolio metrics update accordingly after saving.",
+      "id": "feature-reduce-the-number-of-backend-calls-needed-to-render-the-portfolio-page-by-introducing-a-single-backend-query-that-returns-a-portfolio-summary-snapshot-used-by-the-ui",
+      "title": "Reduce the number of backend calls needed to render the Portfolio page by introducing a single backend query that returns a portfolio summary/snapshot used by the UI.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    }
-  ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Fix error when deleting a card from the card gallery; ensure the card is deleted and changes are reflected in the portfolio",
-      "reqIds": [],
-      "status": "pending"
     },
     {
-      "id": "AR-2",
-      "summary": "Allow editing a card's sale price (if present) when editing a card; update the portfolio accordingly",
-      "reqIds": [],
-      "status": "pending"
+      "id": "feature-tune-react-query-caching-and-invalidation-strategy-for-portfolio-related-data-so-mutations-do-not-cause-excessive-refetch-storms-and-long-post-mutation-loading-states",
+      "title": "Tune React Query caching and invalidation strategy for portfolio-related data so mutations do not cause excessive refetch storms and long post-mutation loading states.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-all-user-facing-loading-error-text-introduced-or-modified-as-part-of-these-performance-fixes-is-in-english",
+      "title": "Ensure all user-facing loading/error text introduced or modified as part of these performance fixes is in English.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Card Portfolio",
+  "new_feature_requests": [],
+  "projectName": "Sorare Portfolio",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

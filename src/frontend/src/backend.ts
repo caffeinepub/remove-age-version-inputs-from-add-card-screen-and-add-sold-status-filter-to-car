@@ -144,6 +144,16 @@ export interface CardWithUser {
     cards: Array<Card>;
     user: Principal;
 }
+export interface PortfolioSnapshot {
+    holdBalance: number;
+    totalInvested: number;
+    investmentTotals: InvestmentTotals;
+    allCards: Array<Card>;
+    portfolioTotal: number;
+    totalReturns: number;
+    totalBalance: number;
+    totalReturnBalance: number;
+}
 export type CardId = bigint;
 export interface UserProfile {
     profileImage?: ExternalBlob;
@@ -208,6 +218,7 @@ export interface backendInterface {
         balance: bigint;
         cards: Array<Card>;
     }>;
+    getPortfolioSnapshot(): Promise<PortfolioSnapshot>;
     getSoldCardBalance(): Promise<number>;
     getSoldCards(user: Principal): Promise<Array<Card>>;
     getTradeSummary(): Promise<{
@@ -235,7 +246,7 @@ export interface backendInterface {
     updateCardTransactionType(cardId: CardId, transactionType: TransactionType): Promise<void>;
     updateSalePrice(cardId: CardId, newSalePrice: number): Promise<void>;
 }
-import type { Card as _Card, CardId as _CardId, CardWithUser as _CardWithUser, ExternalBlob as _ExternalBlob, PaymentMethod as _PaymentMethod, Position as _Position, Time as _Time, TradeTransaction as _TradeTransaction, TransactionGroup as _TransactionGroup, TransactionType as _TransactionType, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { Card as _Card, CardId as _CardId, CardWithUser as _CardWithUser, ExternalBlob as _ExternalBlob, InvestmentTotals as _InvestmentTotals, PaymentMethod as _PaymentMethod, PortfolioSnapshot as _PortfolioSnapshot, Position as _Position, Time as _Time, TradeTransaction as _TradeTransaction, TransactionGroup as _TransactionGroup, TransactionType as _TransactionType, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -594,6 +605,20 @@ export class Backend implements backendInterface {
             return from_candid_record_n42(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getPortfolioSnapshot();
+                return from_candid_PortfolioSnapshot_n43(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getPortfolioSnapshot();
+            return from_candid_PortfolioSnapshot_n43(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getSoldCardBalance(): Promise<number> {
         if (this.processError) {
             try {
@@ -632,28 +657,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getTradeSummary();
-                return from_candid_record_n43(this._uploadFile, this._downloadFile, result);
+                return from_candid_record_n45(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getTradeSummary();
-            return from_candid_record_n43(this._uploadFile, this._downloadFile, result);
+            return from_candid_record_n45(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTransactionGroups(): Promise<TransactionGroup> {
         if (this.processError) {
             try {
                 const result = await this.actor.getTransactionGroups();
-                return from_candid_TransactionGroup_n44(this._uploadFile, this._downloadFile, result);
+                return from_candid_TransactionGroup_n46(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getTransactionGroups();
-            return from_candid_TransactionGroup_n44(this._uploadFile, this._downloadFile, result);
+            return from_candid_TransactionGroup_n46(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTransactionSummary(): Promise<TransactionSummary> {
@@ -785,28 +810,28 @@ export class Backend implements backendInterface {
     async saveBatchCards(arg0: Array<Card>): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveBatchCards(await to_candid_vec_n46(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.saveBatchCards(await to_candid_vec_n48(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveBatchCards(await to_candid_vec_n46(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.saveBatchCards(await to_candid_vec_n48(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n49(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n51(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n49(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n51(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -893,11 +918,14 @@ async function from_candid_ExternalBlob_n28(_uploadFile: (file: ExternalBlob) =>
 function from_candid_PaymentMethod_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PaymentMethod): PaymentMethod {
     return from_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
+async function from_candid_PortfolioSnapshot_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PortfolioSnapshot): Promise<PortfolioSnapshot> {
+    return await from_candid_record_n44(_uploadFile, _downloadFile, value);
+}
 function from_candid_Position_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Position): Position {
     return from_candid_variant_n30(_uploadFile, _downloadFile, value);
 }
-async function from_candid_TransactionGroup_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransactionGroup): Promise<TransactionGroup> {
-    return await from_candid_record_n45(_uploadFile, _downloadFile, value);
+async function from_candid_TransactionGroup_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransactionGroup): Promise<TransactionGroup> {
+    return await from_candid_record_n47(_uploadFile, _downloadFile, value);
 }
 function from_candid_TransactionType_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TransactionType): TransactionType {
     return from_candid_variant_n23(_uploadFile, _downloadFile, value);
@@ -1052,7 +1080,37 @@ async function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promi
         cards: await from_candid_vec_n17(_uploadFile, _downloadFile, value.cards)
     };
 }
-async function from_candid_record_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    holdBalance: number;
+    totalInvested: number;
+    investmentTotals: _InvestmentTotals;
+    allCards: Array<_Card>;
+    portfolioTotal: number;
+    totalReturns: number;
+    totalBalance: number;
+    totalReturnBalance: number;
+}): Promise<{
+    holdBalance: number;
+    totalInvested: number;
+    investmentTotals: InvestmentTotals;
+    allCards: Array<Card>;
+    portfolioTotal: number;
+    totalReturns: number;
+    totalBalance: number;
+    totalReturnBalance: number;
+}> {
+    return {
+        holdBalance: value.holdBalance,
+        totalInvested: value.totalInvested,
+        investmentTotals: value.investmentTotals,
+        allCards: await from_candid_vec_n17(_uploadFile, _downloadFile, value.allCards),
+        portfolioTotal: value.portfolioTotal,
+        totalReturns: value.totalReturns,
+        totalBalance: value.totalBalance,
+        totalReturnBalance: value.totalReturnBalance
+    };
+}
+async function from_candid_record_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     totalReceived: bigint;
     totalCards: bigint;
     givenCards: Array<_Card>;
@@ -1073,7 +1131,7 @@ async function from_candid_record_n43(_uploadFile: (file: ExternalBlob) => Promi
         receivedCards: await from_candid_vec_n17(_uploadFile, _downloadFile, value.receivedCards)
     };
 }
-async function from_candid_record_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     sold: Array<_Card>;
     tradedReceived: Array<_Card>;
     forSale: Array<_Card>;
@@ -1148,8 +1206,8 @@ function from_candid_variant_n38(_uploadFile: (file: ExternalBlob) => Promise<Ui
 async function from_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Card>): Promise<Array<Card>> {
     return await Promise.all(value.map(async (x)=>await from_candid_Card_n18(_uploadFile, _downloadFile, x)));
 }
-async function to_candid_Card_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Card): Promise<_Card> {
-    return await to_candid_record_n48(_uploadFile, _downloadFile, value);
+async function to_candid_Card_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Card): Promise<_Card> {
+    return await to_candid_record_n50(_uploadFile, _downloadFile, value);
 }
 async function to_candid_ExternalBlob_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
@@ -1163,8 +1221,8 @@ function to_candid_Position_n10(_uploadFile: (file: ExternalBlob) => Promise<Uin
 function to_candid_TransactionType_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: TransactionType): _TransactionType {
     return to_candid_variant_n41(_uploadFile, _downloadFile, value);
 }
-async function to_candid_UserProfile_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
-    return await to_candid_record_n50(_uploadFile, _downloadFile, value);
+async function to_candid_UserProfile_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
+    return await to_candid_record_n52(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n16(_uploadFile, _downloadFile, value);
@@ -1190,7 +1248,7 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-async function to_candid_record_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: CardId;
     age: bigint;
     paymentMethod: PaymentMethod;
@@ -1259,7 +1317,7 @@ async function to_candid_record_n48(_uploadFile: (file: ExternalBlob) => Promise
         saleDate: value.saleDate ? candid_some(value.saleDate) : candid_none()
     };
 }
-async function to_candid_record_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     profileImage?: ExternalBlob;
     name: string;
 }): Promise<{
@@ -1343,8 +1401,8 @@ function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         essence: null
     } : value;
 }
-async function to_candid_vec_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Card>): Promise<Array<_Card>> {
-    return await Promise.all(value.map(async (x)=>await to_candid_Card_n47(_uploadFile, _downloadFile, x)));
+async function to_candid_vec_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Card>): Promise<Array<_Card>> {
+    return await Promise.all(value.map(async (x)=>await to_candid_Card_n49(_uploadFile, _downloadFile, x)));
 }
 export interface CreateActorOptions {
     agent?: Agent;

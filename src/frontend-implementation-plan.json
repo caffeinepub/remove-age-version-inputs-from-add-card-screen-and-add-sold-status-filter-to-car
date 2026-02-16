@@ -1,58 +1,93 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stabilize card deletion flow and enable sale price editing in card editor",
+  "title": "Sorare Portfolio performance: React Query refetch reduction and snapshot-driven Portfolio",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Make card deletion remove the card reliably from the gallery and keep UI/metrics stable by updating React Query cache and handling errors gracefully.",
+      "summary": "Reduce redundant React Query refetching for cards and show cached cards immediately during background refresh.",
       "acceptanceCriteria": [
-        "Deleting a card from the card gallery removes it from the cards list after the mutation completes.",
-        "No frontend error boundary screen, console uncaught exception, or backend trap is triggered during/after deletion for a valid card.",
-        "After deletion, any portfolio statistics that depend on the user’s cards reflect the deletion without requiring a manual page refresh (e.g., totals, transaction summary/groups, sold-card balance)."
+        "Navigating between tabs (Portfolio/Cards) does not trigger an unconditional refetch of the cards list on every mount.",
+        "The cards query uses a non-zero staleTime and does not use refetchOnMount='always' unless there is a clear reason documented in code comments.",
+        "The Cards page shows previously cached cards immediately while a background refresh occurs (no blank state/spinner if cached data exists)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Harden the delete-card mutation by adding an optimistic cache update (remove card from the cached userCards list immediately), cancel/invalidate relevant queries safely, and implement rollback on error so the UI never renders into an inconsistent state after deletion."
+          "description": "Update the cards React Query configuration in useGetUserCards to avoid unconditional remount refetches (remove refetchOnMount='always'), set a non-zero staleTime, and ensure cached data is retained while refreshing in the background (e.g., keepPreviousData/placeholder behavior). Add a brief code comment documenting the chosen staleTime/refetch strategy."
         },
         {
-          "path": "frontend/src/components/CardItem.tsx",
+          "path": "frontend/src/pages/CardsPage.tsx",
           "operation": "modify",
-          "description": "Adjust the delete confirmation flow to avoid UI instability during deletion (e.g., disable actions while pending, ensure dialogs close predictably, and avoid using stale card data after deletion) while relying on the improved mutation behavior."
-        },
-        {
-          "path": "frontend/src/pages/PortfolioPage.tsx",
-          "operation": "modify",
-          "description": "Ensure portfolio metrics refresh seamlessly after card deletion by relying on the shared query keys and confirming the page remains resilient when lists/aggregates change rapidly (no render-time assumptions about deleted cards)."
+          "description": "Adjust CardsPage loading UX to avoid showing a full blank/spinner when cached cards exist (differentiate isLoading vs isFetching and render cached list immediately with a scoped refresh indicator only when applicable). Ensure any loading text that is displayed is in English."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Extend the card edit dialog to allow editing an existing sale price and refresh portfolio metrics after saving.",
+      "summary": "Render the Portfolio page using a single portfolio snapshot query (instead of multiple parallel aggregate queries).",
       "acceptanceCriteria": [
-        "For cards with an existing salePrice, the edit dialog shows an editable sale price field prefilled with the current value.",
-        "Saving edits persists the updated sale price in the backend (salePrice changes are reflected when reloading cards).",
-        "After saving, the portfolio view reflects the updated sale price (e.g., total returns / sold-card balance) without requiring a manual refresh.",
-        "For cards without an existing salePrice, the edit dialog does not show the sale price field (or clearly keeps it disabled/hidden)."
+        "Backend exposes one new query method that returns the Portfolio page’s required aggregates in one response (at minimum: totalInvested, totalReturns, investmentTotals, transactionSummary, soldCardBalance, craftedCardsCount, and (if needed by UI) transactionGroups).",
+        "PortfolioPage no longer issues separate parallel queries for each aggregate; it uses the new single query (or at most one additional query when strictly necessary).",
+        "On a cold load after login, the Portfolio page completes data loading with noticeably fewer network calls than before (verify by logging/Network panel: reduced from many calls to 1–2)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/EditCardDialog.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add a conditional sale price input that is shown only when card.salePrice is present, prefill it from the current value, validate edits, and on submit persist the change by invoking the existing sale price update capability in addition to the existing card field update."
+          "description": "Introduce a new React Query hook (e.g., useGetPortfolioSnapshot) backed by the existing backend capability getPortfolioSnapshot, with principal-scoped query keys and sensible caching (non-zero staleTime). This hook should be suitable as the single data source for the Portfolio page."
         },
+        {
+          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "operation": "modify",
+          "description": "Refactor PortfolioPage to use the new portfolio snapshot query as the primary data source, removing reliance on multiple aggregate hooks for initial render. Derive UI metrics from the snapshot where possible, minimizing additional queries. Ensure any modified loading/error strings are in English."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Tune React Query caching and invalidation for portfolio-related mutations to prevent refetch storms and reduce post-mutation blocking.",
+      "acceptanceCriteria": [
+        "After add/update/delete/sell/trade mutations, the UI updates without triggering a full cascade of immediate refetches across many keys; invalidations are consolidated to the minimal set needed (preferably the new portfolio snapshot key plus userCards).",
+        "Portfolio page does not block on refetching multiple independent queries after a mutation; loading indicators are scoped (e.g., sections) rather than a full-page spinner when possible.",
+        "React Query keys remain stable and continue to be scoped per principal (no cross-user cache bleed)."
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Ensure the sale price update mutation integrates cleanly with the edit dialog flow (including consistent invalidation of userCards and portfolio metric queries) so changes are reflected across the app without manual refresh."
+          "description": "Consolidate mutation onSuccess/onSettled invalidations to the minimal stable, principal-scoped keys (primarily ['portfolioSnapshot', principal] and ['userCards', principal]). Remove redundant invalidations (and avoid double invalidation patterns like invalidate onSuccess plus invalidate onSettled). Ensure keys remain principal-scoped and consistent across queries and mutations."
         },
         {
-          "path": "frontend/src/components/CardItem.tsx",
+          "path": "frontend/src/pages/PortfolioPage.tsx",
           "operation": "modify",
-          "description": "Ensure the card display updates correctly after an edited sale price is saved (including any sold/profit sections) by relying on refreshed query state and avoiding stale props assumptions."
+          "description": "Update PortfolioPage loading behavior to avoid a full-page blocking spinner during background refresh after mutations; prefer rendering last-known snapshot data while refresh is in-flight and optionally show scoped section-level loading states where relevant."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Ensure all user-facing loading/error text changed during performance work is in English.",
+      "acceptanceCriteria": [
+        "Any newly added UI strings (loading states, error messages, helper text) are in English.",
+        "If existing loading/error strings are modified during this work, the updated versions are in English."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Translate any user-facing strings affected by the refetch/caching/invalidation changes to English (e.g., thrown errors that surface in UI and toast messages in mutations). Keep non-user-facing console logs as-is if desired, but ensure anything displayed to users is English."
+        },
+        {
+          "path": "frontend/src/pages/CardsPage.tsx",
+          "operation": "modify",
+          "description": "Translate/loading empty-state and any adjusted loading copy introduced/modified while implementing the cached-data-first behavior to English."
+        },
+        {
+          "path": "frontend/src/pages/PortfolioPage.tsx",
+          "operation": "modify",
+          "description": "Translate Portfolio loading text and any new/modified helper text introduced during the snapshot refactor to English."
         }
       ]
     }
