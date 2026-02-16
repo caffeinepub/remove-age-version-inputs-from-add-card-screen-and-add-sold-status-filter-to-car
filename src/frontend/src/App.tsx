@@ -16,6 +16,8 @@ import { useActor } from './hooks/useActor';
 import { useActorQueryState } from './hooks/useActorQueryState';
 import { useQueryClient } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
+import { getSecretParameter } from './utils/urlParams';
+import { errorToRedactedString } from './utils/redactSecrets';
 
 export default function App() {
   const { identity, loginStatus, isInitializing, clear } = useInternetIdentity();
@@ -39,6 +41,19 @@ export default function App() {
   
   // Detect actor initialization errors
   const hasActorError = actorQueryIsError;
+  
+  // Extract caffeineAdminToken early on mount (before login redirect)
+  // This ensures the token survives Internet Identity redirects
+  useEffect(() => {
+    try {
+      // Attempt to extract and store the token silently
+      // This will store it in sessionStorage if present in the URL
+      getSecretParameter('caffeineAdminToken');
+    } catch (error) {
+      // Silently log any parsing errors without showing UI errors
+      console.warn('Failed to extract caffeineAdminToken on mount:', error);
+    }
+  }, []);
   
   // Actor timeout: 10 seconds
   useEffect(() => {
@@ -207,19 +222,36 @@ export default function App() {
               <div className="max-w-md w-full space-y-4">
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Failed to connect</AlertTitle>
+                  <AlertTitle>Connection Failed</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p>
-                      The connection to the backend could not be established. This may be due to a slow internet connection or temporary server issues.
+                      The connection to the backend could not be established. This may be due to:
                     </p>
+                    <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                      <li>Slow or unstable internet connection</li>
+                      <li>Temporary server issues</li>
+                      <li>Browser cache or session issues</li>
+                    </ul>
+                    <p className="font-semibold mt-3">What you can try:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                      <li>Click "Retry" to attempt reconnection</li>
+                      <li>Log out and log in again</li>
+                      <li>Reload the page in your browser</li>
+                      <li>Check your internet connection</li>
+                    </ul>
                     {actorError && (
-                      <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
-                        {actorError instanceof Error ? actorError.message : String(actorError)}
-                      </p>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs font-semibold">
+                          Show technical details
+                        </summary>
+                        <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2 break-all">
+                          {errorToRedactedString(actorError)}
+                        </p>
+                      </details>
                     )}
                     {actorTimeout && !actorError && (
                       <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
-                        Actor initialization timeout after 10 seconds
+                        Connection timeout after 10 seconds
                       </p>
                     )}
                   </AlertDescription>
@@ -231,6 +263,9 @@ export default function App() {
                   </Button>
                   <Button onClick={handleLogout} variant="outline">
                     Log out
+                  </Button>
+                  <Button onClick={() => window.location.reload()} variant="outline">
+                    Reload page
                   </Button>
                 </div>
               </div>
@@ -264,18 +299,18 @@ export default function App() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>
-                    {profileTimeout ? 'Timeout' : 'Loading error'}
+                    {profileTimeout ? 'Loading Timeout' : 'Loading Error'}
                   </AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p>
                       {profileTimeout 
-                        ? 'Loading the profile is taking too long. Please try again.'
-                        : 'The profile could not be loaded. Please try again.'
+                        ? 'Loading your profile is taking too long. Please try again.'
+                        : 'Your profile could not be loaded. Please try again.'
                       }
                     </p>
                     {profileError && (
                       <p className="text-xs font-mono bg-destructive/10 p-2 rounded mt-2">
-                        {profileError instanceof Error ? profileError.message : 'Unknown error'}
+                        {errorToRedactedString(profileError)}
                       </p>
                     )}
                   </AlertDescription>

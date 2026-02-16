@@ -1,49 +1,63 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Surface actor initialization failures to avoid infinite Connecting screen",
+  "title": "Fix secret token parsing, pre-login persistence, and backend connection error messaging",
   "requirements": [
     {
-      "id": "REQ-4",
-      "summary": "Show a user-visible backend connection error state when actor initialization fails and provide Retry + Log out recovery actions.",
+      "id": "REQ-1",
+      "summary": "Fix hash-based secret token parsing/clearing for caffeineAdminToken and persist it to sessionStorage.",
       "acceptanceCriteria": [
-        "If actor creation fails (e.g., the useActor React Query enters an error state), the UI must not remain indefinitely on the \"Connecting…\" spinner.",
-        "When actor creation fails, the UI must show an error message (English) indicating the backend connection failed, and provide a Retry action.",
-        "Retry must trigger a new actor initialization attempt without requiring the user to manually refresh the page.",
-        "A Log out action must remain available from the error state so the user can recover."
+        "When the URL contains `#/anything?caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
+        "When the URL contains `#caffeineAdminToken=XYZ`, `getSecretParameter('caffeineAdminToken')` returns `XYZ` and stores it in sessionStorage.",
+        "After extraction, the token is removed from the visible URL (hash) without reloading the page (existing behavior preserved).",
+        "If no token is present, `getSecretParameter('caffeineAdminToken')` returns null and does not throw."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useActorQueryState.ts",
-          "operation": "create",
-          "description": "Add a non-immutable wrapper hook that reads the React Query cache state for the actor query (status/error/fetchStatus) keyed by the current identity principal, so the UI can detect actor initialization failures and render an error state. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/utils/urlParams.ts",
           "operation": "modify",
-          "description": "Update the authenticated \"Connecting…\" flow to consult the actor React Query error state (via the new wrapper hook) and render an English error screen when actor initialization fails, including Retry (triggers a new actor init attempt via React Query reset/refetch without window reload) and Log out actions. Verify the component's usage instructions before implementing."
+          "description": "Update secret extraction to support both hash-route query format (e.g. `#/route?caffeineAdminToken=...`) and pure hash query format (e.g. `#caffeineAdminToken=...`), persist found values to sessionStorage, and robustly remove only the secret from the visible hash (including when there is no `?` present)."
         }
       ]
     },
     {
-      "id": "REQ-5",
-      "summary": "Make actor initialization timeout/error handling consistent so the spinner only appears during an active attempt and never spins indefinitely when fetching stops without an actor.",
+      "id": "REQ-2",
+      "summary": "Proactively extract/store caffeineAdminToken on initial app load so it survives Internet Identity redirects.",
       "acceptanceCriteria": [
-        "The \"Connecting…\" screen must only be shown while an actor initialization attempt is actively in progress.",
-        "If the actor query stops fetching and has no actor available, the UI must not remain on the \"Connecting…\" screen.",
-        "Actor timeout logic must not depend solely on isFetching in a way that allows indefinite loading when the query errors quickly.",
-        "Manual QA: after login, the app reaches the main tabs view with Portfolio selected by default when actor initialization and profile loading succeed."
+        "On first render of the app (unauthenticated), the app attempts to extract `caffeineAdminToken` and store it in sessionStorage without showing any errors to the user.",
+        "After completing Internet Identity login, backend actor initialization succeeds in live deployment when a valid `caffeineAdminToken` was present before redirect.",
+        "If the token was not present, behavior remains unchanged (no crashes; existing error/timeout UI still works)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Refactor the App actor-init state machine to derive UI states from the actor query's fetchStatus/status (in-progress vs error vs idle) instead of only checking !actor, ensuring: spinner shows only while actively fetching; a stopped-without-actor condition transitions to timeout or error; and the existing successful path continues to the main tabs with Portfolio selected by default. Verify the component's usage instructions before implementing."
+          "description": "Add a mount-time effect that calls `getSecretParameter('caffeineAdminToken')` early (before any user login interaction) and swallows/logs any parsing errors without displaying UI errors; do not modify immutable auth/actor hook files."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Improve backend connection error UI to show readable, actionable English messaging while redacting sensitive secrets.",
+      "acceptanceCriteria": [
+        "If actor initialization fails, the UI shows an English error message with at least one actionable next step (e.g., retry, reload, log out/in).",
+        "If an error message is available from the actor query, it is shown in the error details area (as today) but must not include any extracted URL/session secret values."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/redactSecrets.ts",
+          "operation": "create",
+          "description": "Create a small utility to redact sensitive values (at minimum `caffeineAdminToken`, from both query-like fragments and arbitrary strings) from error messages before rendering them to the UI."
         },
         {
-          "path": "frontend/src/hooks/useActorQueryState.ts",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Extend the wrapper hook to expose the minimal derived booleans needed by App (e.g., isAttemptInProgress, isError, isIdleWithoutActor) so timeout logic can be implemented without modifying immutable hooks. Verify the component's usage instructions before implementing."
+          "description": "Update the actor-initialization failure/timeout UI copy to clear, user-readable English with suggested actions (Retry/Reload/Log out & log in again), and ensure any rendered error details are passed through the redaction utility so secrets never appear."
+        },
+        {
+          "path": "frontend/src/components/ErrorBoundary.tsx",
+          "operation": "modify",
+          "description": "Switch user-facing error boundary text that is touched by this fix to English and ensure technical details displayed (error/stack) are sanitized via the redaction utility to keep sensitive tokens out of the UI."
         }
       ]
     }

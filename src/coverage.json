@@ -1,39 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T21:44:19.263Z",
+  "generatedAt": "2026-02-13T23:29:09.280Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-4",
-        "summary": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
+        "id": "REQ-1",
+        "summary": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useActorQueryState.ts",
+          "frontend/src/utils/urlParams.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/urlParams.ts"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useActorQueryState.ts",
           "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-5",
-        "summary": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
+        "id": "REQ-3",
+        "summary": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/utils/redactSecrets.ts",
           "frontend/src/App.tsx",
-          "frontend/src/hooks/useActorQueryState.ts"
+          "frontend/src/components/ErrorBoundary.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/utils/redactSecrets.ts",
           "frontend/src/App.tsx",
-          "frontend/src/hooks/useActorQueryState.ts"
+          "frontend/src/components/ErrorBoundary.tsx"
         ]
       }
     ]
@@ -44,7 +55,9 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
-    "frontend/src/hooks/useActorQueryState.ts",
+    "frontend/src/components/ErrorBoundary.tsx",
+    "frontend/src/utils/redactSecrets.ts",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

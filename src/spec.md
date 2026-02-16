@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Stop the app from getting stuck on the “Connecting…” screen after Internet Identity login by correctly surfacing actor initialization failures and providing clear recovery actions.
+**Goal:** Fix the post-login “Connection to the backend could not be established” issue in live deployment by reliably extracting/persisting `caffeineAdminToken` from hash-based URLs before Internet Identity redirects, and by improving the readability of backend connection errors.
 
 **Planned changes:**
-- Update the app’s post-login/actor initialization UI flow to show “Connecting…” only while an actor initialization attempt is actively in progress.
-- When actor initialization fails (React Query error) or stops fetching without producing an actor, transition to a user-visible error/timeout state instead of spinning indefinitely.
-- Add an English error view for backend connection/actor init failure with actions to Retry (re-attempt actor initialization) and Log out (available from the error state).
+- Update secret URL parameter parsing to support both `#/route?caffeineAdminToken=...` and `#caffeineAdminToken=...`, persist the token to `sessionStorage`, and remove it from the visible hash without a page reload.
+- Proactively extract/store `caffeineAdminToken` during initial app load (before the user clicks login) so it survives the Internet Identity redirect flow.
+- Improve the backend connection error UI to display a clear English message, include at least one suggested user action, and surface non-sensitive underlying initialization details without exposing any secret values.
 
-**User-visible outcome:** After logging in, the user either reaches the main tabs view with Portfolio selected (when initialization succeeds) or sees an English error/timeout message with Retry and Log out options instead of an endless “Connecting…” spinner.
+**User-visible outcome:** Users can log in successfully in live deployment when a valid `caffeineAdminToken` is present in the URL, and if backend initialization fails they see a clearer English error with actionable next steps and safe diagnostic details.

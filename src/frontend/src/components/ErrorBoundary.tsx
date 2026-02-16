@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { redactSecrets } from '../utils/redactSecrets';
 
 interface Props {
   children: ReactNode;
@@ -55,28 +56,28 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-2xl w-full space-y-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Ein Fehler ist aufgetreten</AlertTitle>
+              <AlertTitle>An Error Occurred</AlertTitle>
               <AlertDescription className="space-y-3">
                 <p>
-                  Die Anwendung ist auf einen unerwarteten Fehler gestoßen. Bitte versuche die Seite neu zu laden.
+                  The application encountered an unexpected error. Please try reloading the page.
                 </p>
                 {this.state.error && (
                   <details className="text-xs">
                     <summary className="cursor-pointer font-semibold mb-2">
-                      Technische Details anzeigen
+                      Show technical details
                     </summary>
                     <div className="font-mono bg-destructive/10 p-3 rounded space-y-2 overflow-auto max-h-60">
                       <div>
-                        <strong>Fehler:</strong>
+                        <strong>Error:</strong>
                         <pre className="whitespace-pre-wrap mt-1">
-                          {this.state.error.toString()}
+                          {redactSecrets(this.state.error.toString())}
                         </pre>
                       </div>
                       {this.state.errorInfo && (
                         <div>
                           <strong>Stack Trace:</strong>
                           <pre className="whitespace-pre-wrap mt-1">
-                            {this.state.errorInfo.componentStack}
+                            {redactSecrets(this.state.errorInfo.componentStack || '')}
                           </pre>
                         </div>
                       )}
@@ -88,7 +89,7 @@ class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <Button onClick={this.handleReset} variant="default">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Seite neu laden
+                Reload page
               </Button>
             </div>
           </div>

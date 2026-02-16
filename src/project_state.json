@@ -4,29 +4,37 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "After login, app gets stuck on connecting/loading screen indefinitely instead of navigating to Portfolio."
+    "After live deployment, login fails with error: \"Connection to the backend could not be established\"."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-prevent-the-app-from-getting-stuck-on-the-connecting-loading-screen-after-a-successful-internet-identity-login-by-surfacing-backend-actor-initialization-failures-react-query-error-state-and-providing-a-user-visible-error-state-with-recovery-actions",
-      "title": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
+      "id": "feature-fix-secret-url-parameter-parsing-so-the-app-can-reliably-read-caffeineadmintoken-from-hash-based-routes-e-g-someroute-caffeineadmintoken-as-well-as-from-pure-hash-query-formats-e-g-caffeineadmintoken-and-persist-the-extracted-token-in-sessionstorage-as-intended",
+      "title": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
       "reqIds": [
-        "REQ-4"
+        "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-update-the-actor-initialization-flow-useactor-hook-and-app-state-machine-so-that-timeouts-and-errors-are-handled-consistently-if-actor-initialization-is-neither-successfully-resolved-nor-actively-fetching-the-ui-must-transition-away-from-the-spinner-to-either-a-timeout-state-or-an-error-state-rather-than-spinning-forever",
-      "title": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
+      "id": "feature-persist-the-caffeineadmintoken-before-an-internet-identity-login-redirect-can-remove-it-from-the-url-by-proactively-extracting-storing-it-during-initial-app-load-before-the-user-clicks-login",
+      "title": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
       "reqIds": [
-        "REQ-5"
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-backend-connection-error-state-to-surface-the-underlying-actor-initialization-error-in-a-user-readable-way-english-including-a-short-suggested-action-while-keeping-sensitive-tokens-out-of-the-ui",
+      "title": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
+      "reqIds": [
+        "REQ-3"
       ],
       "version": 1
     }
   ],
   "new_feature_requests": [],
-  "projectName": "Fix infinite Connecting screen after login (actor init errors not surfaced)",
+  "projectName": "Fix post-login backend connection failure in live deployment",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

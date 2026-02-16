@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-prevent-the-app-from-getting-stuck-on-the-connecting-loading-screen-after-a-successful-internet-identity-login-by-surfacing-backend-actor-initialization-failures-react-query-error-state-and-providing-a-user-visible-error-state-with-recovery-actions",
-      "featureTitle": "Prevent the app from getting stuck on the \"Connecting…\" loading screen after a successful Internet Identity login by surfacing backend actor initialization failures (React Query error state) and providing a user-visible error state with recovery actions.",
+      "featureId": "feature-fix-secret-url-parameter-parsing-so-the-app-can-reliably-read-caffeineadmintoken-from-hash-based-routes-e-g-someroute-caffeineadmintoken-as-well-as-from-pure-hash-query-formats-e-g-caffeineadmintoken-and-persist-the-extracted-token-in-sessionstorage-as-intended",
+      "featureTitle": "Fix secret URL parameter parsing so the app can reliably read `caffeineAdminToken` from hash-based routes (e.g. `#/someRoute?caffeineAdminToken=...`) as well as from pure hash query formats (e.g. `#caffeineAdminToken=...`), and persist the extracted token in `sessionStorage` as intended.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useActorQueryState.ts"
+        "frontend/src/utils/urlParams.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,16 +18,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-1"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-the-actor-initialization-flow-useactor-hook-and-app-state-machine-so-that-timeouts-and-errors-are-handled-consistently-if-actor-initialization-is-neither-successfully-resolved-nor-actively-fetching-the-ui-must-transition-away-from-the-spinner-to-either-a-timeout-state-or-an-error-state-rather-than-spinning-forever",
-      "featureTitle": "Update the actor initialization flow (useActor hook and App state machine) so that timeouts and errors are handled consistently: if actor initialization is neither successfully resolved nor actively fetching, the UI must transition away from the spinner to either a timeout state or an error state, rather than spinning forever.",
+      "featureId": "feature-persist-the-caffeineadmintoken-before-an-internet-identity-login-redirect-can-remove-it-from-the-url-by-proactively-extracting-storing-it-during-initial-app-load-before-the-user-clicks-login",
+      "featureTitle": "Persist the `caffeineAdminToken` before an Internet Identity login redirect can remove it from the URL by proactively extracting/storing it during initial app load (before the user clicks login).",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/hooks/useActorQueryState.ts"
+        "frontend/src/App.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -41,7 +39,30 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-5"
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-improve-the-backend-connection-error-state-to-surface-the-underlying-actor-initialization-error-in-a-user-readable-way-english-including-a-short-suggested-action-while-keeping-sensitive-tokens-out-of-the-ui",
+      "featureTitle": "Improve the backend connection error state to surface the underlying actor initialization error in a user-readable way (English), including a short suggested action, while keeping sensitive tokens out of the UI.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/ErrorBoundary.tsx",
+        "frontend/src/utils/redactSecrets.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "http-outcalls@3.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
       ],
       "confidence": "high"
     }

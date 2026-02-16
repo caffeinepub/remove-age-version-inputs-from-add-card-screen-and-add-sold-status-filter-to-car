@@ -1,62 +1,66 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T21:44:19.260Z",
-  "summary": "The diff adds a new hook to read React Query cache state for the actor initialization query and updates App.tsx to track actor init progress/error/timeout, aiming to avoid an infinite “Connecting…” spinner. However, due to truncation, the actual UI rendering for the error/timeout states and the exact “Connecting…” gating logic cannot be fully verified. The diff summary also describes multiple unrelated feature changes (including Google OAuth) that were not requested and conflict with stated non-goals.",
+  "generatedAt": "2026-02-13T23:29:09.278Z",
+  "summary": "The diff implements early token extraction on App mount (REQ-2) and adds secret redaction utilities, but evidence is insufficient or indicates gaps for the required hash parsing/removal behavior (REQ-1) and the specific actor-initialization error UX improvements (REQ-3). The diff summary also indicates multiple unrelated feature changes, including adding Google OAuth (a stated non-goal) and modifying an immutable hook path.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "When actor creation fails, the UI must show an English error message indicating the backend connection failed, and provide Retry and Log out actions.",
-      "reason": "The provided App.tsx diff is truncated before the rendering/state-machine section; while state flags and hooks are added (hasActorError, retryActor, clear), the actual user-visible error UI (message + Retry + Log out) is not directly shown in the visible code.",
+      "id": "REQ-1",
+      "requirement": "Parse caffeineAdminToken correctly from both `#/route?caffeineAdminToken=...` and pure-hash formats like `#caffeineAdminToken=...`, persist to sessionStorage, and remove the token from the visible URL hash without reloading; return null safely if absent.",
+      "reason": "The shown `getUrlParameter` implementation only attempts hash parsing when there is a `?` in the hash, and does not show handling for pure-hash `#caffeineAdminToken=XYZ`. The hash-cleaning behavior is mentioned but the implementation is truncated, and `getSecretParameter` itself is not shown in the provided excerpt, so the acceptance criteria cannot be confirmed from the diff summary.",
       "evidence": [
-        "frontend/src/App.tsx (truncated)"
+        "frontend/src/utils/urlParams.ts (shows `getUrlParameter` only parsing hash query when `hash.indexOf('?') !== -1`; file is truncated before clear/hash removal logic completes)",
+        "frontend/src/App.tsx (imports `getSecretParameter` from `./utils/urlParams`, but its implementation/behavior is not shown in the diff summary)"
       ]
     },
     {
-      "id": "REQ-5",
-      "requirement": "The “Connecting…” screen must only be shown while actor initialization is actively in progress; if the actor query is no longer fetching and no actor is available, the UI must transition away from the spinner to timeout or error rather than spinning forever.",
-      "reason": "The diff shows new derived booleans (including isIdleWithoutData) in useActorQueryState, but App.tsx (as shown) only uses isAttemptInProgress/actorFetching/hasActorError and the key UI decision logic is truncated, so it cannot be confirmed that the spinner is gated strictly to active fetching and that non-fetching/no-actor states exit the spinner reliably.",
+      "id": "REQ-3",
+      "requirement": "Improve backend connection/actor initialization error state with an English message including an actionable next step, and show underlying error details while ensuring no secrets/tokens are displayed.",
+      "reason": "While secret redaction utilities are added and ErrorBoundary now redacts details, the diff excerpt does not show the specific actor-initialization error UI changes in App (the relevant section is truncated). Therefore it is not verifiable that actor initialization failures display the required actionable English message and redacted technical details in the actor error state.",
       "evidence": [
-        "frontend/src/hooks/useActorQueryState.ts",
-        "frontend/src/App.tsx (truncated)"
+        "frontend/src/App.tsx (truncated; imports `errorToRedactedString` but the actor error UI rendering is not shown)",
+        "frontend/src/components/ErrorBoundary.tsx (updates error boundary UI, but this is not evidence of the actor initialization error state UI required by REQ-3)",
+        "frontend/src/utils/redactSecrets.ts (added redaction helpers, but does not itself implement the actor error-state UI)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added/implemented Google OAuth authentication hook (a new authentication provider).",
-      "reason": "The BuildRequest explicitly states: “Do not add new authentication providers (only Internet Identity).” The diff summary indicates a Google auth hook with full OAuth2 flow.",
+      "description": "Added/implemented Google OAuth authentication hook (new authentication provider).",
+      "reason": "The BuildRequest explicitly lists adding new authentication providers as a non-goal (only Internet Identity).",
       "evidence": [
-        "frontend-file-summaries.txt (mentions \"frontend/src/hooks/useGoogleAuth.ts\" implementing Google OAuth2)"
+        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useGoogleAuth.ts`: \"implementing real Google OAuth2 authentication\")"
       ]
     },
     {
-      "description": "Broad UI/feature changes to Portfolio/Cards and multiple dialogs (rarity styling, sold cards profit logic, add/edit/sell/trade dialogs, crafted cards modal, etc.).",
-      "reason": "The BuildRequest non-goals say not to redesign Portfolio/Cards features or change related behavior beyond the connecting/actor init flow. The diff summary describes multiple unrelated UI and business-logic changes.",
+      "description": "Modified `frontend/src/hooks/useActor.ts` behavior (actor initialization retries/manual retry exposure).",
+      "reason": "The BuildRequest constraints explicitly prohibit editing `frontend/src/hooks/useActor.ts` / `.tsx` (immutable path).",
       "evidence": [
-        "frontend-file-summaries.txt (mentions changes across PortfolioPage, CardsPage, AddCardDialog, EditCardDialog, SoldCardsModal, SellOrTradeDialog, CraftedCardsModal, CardItem)"
+        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useActor.ts`: \"Actor initialization hook with disabled automatic retries...\")"
       ]
     },
     {
-      "description": "Changes to React Query mutation invalidation behavior in useQueries (removed await on invalidateQueries) unrelated to actor init spinner issue.",
-      "reason": "Not requested by REQ-4/REQ-5, which focus on surfacing actor initialization failures and consistent timeout/error transitions.",
+      "description": "Multiple unrelated UI/feature changes to pages and dialogs (portfolio metrics overhaul, cards gallery filters, free-text rarity input, profit calculation changes, etc.).",
+      "reason": "These changes are not requested by REQ-1/2/3 and are outside the stated goal of fixing post-login backend connection failure and related error handling/token persistence.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions \"frontend/src/hooks/useQueries.ts\" non-blocking invalidations)"
+        "frontend-file-summaries.txt (mentions changes across `frontend/src/pages/PortfolioPage.tsx`, `frontend/src/pages/CardsPage.tsx`, `frontend/src/components/AddCardDialog.tsx`, `frontend/src/components/EditCardDialog.tsx`, `frontend/src/components/SoldCardsModal.tsx`, `frontend/src/components/SellOrTradeDialog.tsx`, etc.)"
       ]
     },
     {
-      "description": "Global theme/style changes (OKLCH color system, space-inspired theme).",
-      "reason": "Not requested; scope is specifically the connecting screen / actor init error handling.",
+      "description": "Changed React Query mutation behavior to make invalidations non-blocking (removed await on invalidateQueries).",
+      "reason": "Not requested by REQ-1/2/3 and unrelated to secret parsing/token persistence or actor initialization error UI.",
       "evidence": [
-        "frontend-file-summaries.txt (mentions \"frontend/src/index.css\" theme changes)"
+        "frontend-file-summaries.txt (mentions `frontend/src/hooks/useQueries.ts`: \"removed await on invalidateQueries\")"
       ]
     }
   ],
-  "confidence": 0.56,
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
-    "frontend/src/hooks/useActorQueryState.ts",
+    "frontend/src/components/ErrorBoundary.tsx",
+    "frontend/src/utils/redactSecrets.ts",
+    "frontend/src/utils/urlParams.ts",
     "project_state.json"
   ]
 }
