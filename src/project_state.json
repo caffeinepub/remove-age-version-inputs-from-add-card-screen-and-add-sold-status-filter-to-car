@@ -3,22 +3,12 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "Deleting a card removes it from the card gallery temporarily, but the portfolio does not update; after page refresh the card reappears in the gallery (deletion not persisted / state sync issue between portfolio and gallery)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-ensure-the-portfolio-ui-updates-immediately-after-a-card-is-deleted-from-the-gallery-using-the-same-underlying-data-source-as-the-gallery-react-query-and-or-ensuring-the-portfolio-snapshot-query-is-reliably-refetched-updated-after-deletion",
-      "title": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-gallery-state-synchronization-so-that-the-gallery-reflects-the-backend-as-the-source-of-truth-after-deletion-including-correctly-handling-optimistic-updates-and-ensuring-the-ui-reconciles-with-the-backend-result",
-      "title": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
+      "id": "feature-update-the-history-page-ui-to-display-clearer-more-informative-entries-for-changes-to-existing-cards-by-showing-card-names-not-only-ids-wherever-possible-and-by-showing-an-explicit-absolute-date-time-for-each-history-entry-in-addition-to-the-relative-time-already-displayed",
+      "title": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
       "reqIds": [
         "REQ-3"
       ],
@@ -28,9 +18,23 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Fix card deletion so that deleting a card is persisted in the backend and the deleted card does not reappear in the card gallery after a full page refresh.",
+      "summary": "Historie so erweitern, dass auch Änderungen an bereits bestehenden Karten vollständig nachvollziehbar angezeigt werden (inkl. Datum/Zeit und Art der Änderung)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Enhance backend change-history logging so edits to existing cards are fully traceable: when a card is edited or updated, the stored history entry summary must include which fields changed and the before/after values (for example: “Edited card #12 (Mbappé): purchasePrice 10.0 → 12.5, club PSG → Real Madrid”).",
       "reqIds": [
         "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Enhance backend change-history summaries for other existing card modifications so they are self-explanatory and include before/after context where applicable (e.g., sale price changes should record oldSalePrice → newSalePrice; deleting a card should include the last known card name if available; marking as sold should include sale price and sale date/time).",
+      "reqIds": [
+        "REQ-2"
       ],
       "status": "pending"
     }

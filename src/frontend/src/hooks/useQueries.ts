@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
 import { useInternetIdentity } from './useInternetIdentity';
-import { type Card, type UserProfile, type CardId, PaymentMethod, Position, type InvestmentTotals, type Time, type PortfolioSnapshot, TransactionType } from '../backend';
+import { type Card, type UserProfile, type CardId, PaymentMethod, Position, type InvestmentTotals, type Time, type PortfolioSnapshot, TransactionType, type TradeTransaction, type ChangeHistoryEntry } from '../backend';
 import { toast } from 'sonner';
 import { queryKeys } from './queryKeys';
 
@@ -72,6 +72,48 @@ export function useSaveCallerUserProfile() {
   });
 }
 
+// Change History Queries
+const HISTORY_PAGE_SIZE = 20;
+
+export function useGetChangeHistory() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useInfiniteQuery<ChangeHistoryEntry[]>({
+    queryKey: queryKeys.changeHistory(principal),
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!actor) {
+        console.warn('Actor not available for history query');
+        return [];
+      }
+      if (!identity) {
+        console.warn('Identity not available for history query');
+        return [];
+      }
+
+      try {
+        const offset = (pageParam as number) * HISTORY_PAGE_SIZE;
+        const entries = await actor.getChangeHistory(BigInt(HISTORY_PAGE_SIZE), BigInt(offset));
+        return entries;
+      } catch (error) {
+        console.error('Error fetching change history:', error);
+        throw error;
+      }
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      // If the last page has fewer items than the page size, there are no more pages
+      if (lastPage.length < HISTORY_PAGE_SIZE) {
+        return undefined;
+      }
+      return allPages.length;
+    },
+    initialPageParam: 0,
+    enabled: !!actor && !actorFetching && !!identity,
+    staleTime: 30000,
+  });
+}
+
 // Card Queries
 // Caching strategy: staleTime 60s to avoid refetch on every tab switch, no refetchOnMount='always'
 export function useGetUserCards() {
@@ -92,21 +134,95 @@ export function useGetUserCards() {
       }
       
       try {
+        console.log('Fetching user cards...');
         const cards = await actor.getAllCardsForUser();
         console.log(`Fetched ${cards.length} cards`);
         return cards;
       } catch (error) {
         console.error('Error fetching cards:', error);
-        return [];
+        throw error;
       }
     },
     enabled: !!actor && !isFetching && !!identity,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 3000),
-    // Performance: Cache cards for 60s to avoid refetch on tab navigation
     staleTime: 60000,
-    // Performance: Only refetch if data is stale, not on every mount
-    refetchOnMount: false,
+  });
+}
+
+export function useGetPortfolioSnapshot() {
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useQuery<PortfolioSnapshot>({
+    queryKey: queryKeys.portfolioSnapshot(principal),
+    queryFn: async () => {
+      if (!actor) {
+        console.warn('Actor not available for portfolio query');
+        throw new Error('Actor not available');
+      }
+      if (!identity) {
+        console.warn('Identity not available for portfolio query');
+        throw new Error('Not logged in');
+      }
+
+      try {
+        console.log('Fetching portfolio snapshot...');
+        const snapshot = await actor.getPortfolioSnapshot();
+        console.log('Portfolio snapshot fetched:', snapshot);
+        return snapshot;
+      } catch (error) {
+        console.error('Error fetching portfolio snapshot:', error);
+        throw error;
+      }
+    },
+    enabled: !!actor && !isFetching && !!identity,
+    staleTime: 30000,
+  });
+}
+
+// Derived query: Get transaction groups from portfolio snapshot
+export function useGetTransactionGroups() {
+  const { data: snapshot } = useGetPortfolioSnapshot();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useQuery({
+    queryKey: queryKeys.transactionGroups(principal),
+    queryFn: () => {
+      if (!snapshot) return { sales: [], trades: [] };
+
+      const allCards = snapshot.allCards;
+      const sales = allCards.filter(card => card.transactionType === TransactionType.sold);
+      const trades = allCards.filter(card => 
+        card.transactionType === TransactionType.tradedGiven || 
+        card.transactionType === TransactionType.tradedReceived
+      );
+
+      return { sales, trades };
+    },
+    enabled: !!snapshot,
+    staleTime: 30000,
+  });
+}
+
+// Derived query: Get crafted cards from portfolio snapshot
+export function useGetCraftedCards() {
+  const { data: snapshot } = useGetPortfolioSnapshot();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useQuery({
+    queryKey: queryKeys.craftedCardsCount(principal),
+    queryFn: () => {
+      if (!snapshot) return [];
+      
+      return snapshot.allCards.filter(card => 
+        card.paymentMethod === PaymentMethod.essence && 
+        card.transactionType === TransactionType.forSale
+      );
+    },
+    enabled: !!snapshot,
+    staleTime: 30000,
   });
 }
 
@@ -117,66 +233,53 @@ export function useAddCard() {
   const principal = identity?.getPrincipal().toString();
 
   return useMutation({
-    mutationFn: async ({
-      name,
-      rarity,
-      purchasePrice,
-      discountPercent,
-      paymentMethod,
-      purchaseDate,
-      notes,
-      country,
-      league,
-      club,
-      position,
-      age,
-      version,
-      season,
-    }: {
+    mutationFn: async (params: {
       name: string;
       rarity: string;
       purchasePrice: number;
       discountPercent: number;
       paymentMethod: PaymentMethod;
-      purchaseDate: Time | null;
-      notes: string;
       country: string;
       league: string;
       club: string;
-      position: Position;
-      age: number;
+      age: bigint;
       version: string;
       season: string;
+      position: Position;
+      purchaseDate: Time | null;
+      notes: string;
+      image: any;
     }) => {
       if (!actor) throw new Error('Actor not available');
       if (!identity) throw new Error('Not logged in');
+      
       return actor.addCard(
-        name,
-        rarity,
-        purchasePrice,
-        discountPercent,
-        paymentMethod,
-        country,
-        league,
-        club,
-        BigInt(age),
-        version,
-        season,
-        position,
-        purchaseDate,
-        notes,
-        null
+        params.name,
+        params.rarity,
+        params.purchasePrice,
+        params.discountPercent,
+        params.paymentMethod,
+        params.country,
+        params.league,
+        params.club,
+        params.age,
+        params.version,
+        params.season,
+        params.position,
+        params.purchaseDate,
+        params.notes,
+        params.image
       );
     },
     onSuccess: () => {
-      // Consolidated invalidation: only portfolioSnapshot and userCards
-      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
       toast.success('Card added successfully');
     },
     onError: (error: Error) => {
       console.error('Error adding card:', error);
-      toast.error(`Error adding: ${error.message}`);
+      toast.error(`Error adding card: ${error.message}`);
     },
   });
 }
@@ -188,77 +291,79 @@ export function useUpdateCard() {
   const principal = identity?.getPrincipal().toString();
 
   return useMutation({
-    mutationFn: async ({
-      cardId,
-      name,
-      rarity,
-      purchasePrice,
-      discountPercent,
-      paymentMethod,
-      purchaseDate,
-      notes,
-      country,
-      league,
-      club,
-      position,
-      age,
-      version,
-      season,
-      salePrice,
-    }: {
+    mutationFn: async (params: {
       cardId: CardId;
       name: string;
       rarity: string;
       purchasePrice: number;
       discountPercent: number;
       paymentMethod: PaymentMethod;
-      purchaseDate: Time | null;
-      notes: string;
       country: string;
       league: string;
       club: string;
-      position: Position;
-      age: number;
+      age: bigint;
       version: string;
       season: string;
-      salePrice?: number | null;
+      position: Position;
+      purchaseDate: Time | null;
+      notes: string;
     }) => {
       if (!actor) throw new Error('Actor not available');
       if (!identity) throw new Error('Not logged in');
       
-      // First update the card fields
-      await actor.updateCard(
-        cardId,
-        name,
-        rarity,
-        purchasePrice,
-        discountPercent,
-        paymentMethod,
-        country,
-        league,
-        club,
-        BigInt(age),
-        version,
-        season,
-        position,
-        purchaseDate,
-        notes
+      return actor.updateCard(
+        params.cardId,
+        params.name,
+        params.rarity,
+        params.purchasePrice,
+        params.discountPercent,
+        params.paymentMethod,
+        params.country,
+        params.league,
+        params.club,
+        params.age,
+        params.version,
+        params.season,
+        params.position,
+        params.purchaseDate,
+        params.notes
       );
-      
-      // If salePrice is provided and not null, update it separately
-      if (salePrice !== undefined && salePrice !== null) {
-        await actor.updateSalePrice(cardId, salePrice);
-      }
     },
     onSuccess: () => {
-      // Consolidated invalidation: only portfolioSnapshot and userCards
-      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
       toast.success('Card updated successfully');
     },
     onError: (error: Error) => {
       console.error('Error updating card:', error);
-      toast.error(`Error updating: ${error.message}`);
+      toast.error(`Error updating card: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdateSalePrice() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useMutation({
+    mutationFn: async (params: { cardId: CardId; newSalePrice: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
+      
+      return actor.updateSalePrice(params.cardId, params.newSalePrice);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
+      toast.success('Sale price updated');
+    },
+    onError: (error: Error) => {
+      console.error('Error updating sale price:', error);
+      toast.error(`Error updating price: ${error.message}`);
     },
   });
 }
@@ -273,61 +378,55 @@ export function useDeleteCard() {
     mutationFn: async (cardId: CardId) => {
       if (!actor) throw new Error('Actor not available');
       if (!identity) throw new Error('Not logged in');
+      
       return actor.deleteCard(cardId);
     },
-    onMutate: async (cardId: CardId) => {
-      // Cancel any outgoing refetches to avoid overwriting optimistic update
+    onMutate: async (cardId) => {
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.userCards(principal) });
       await queryClient.cancelQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
-      
-      // Snapshot the previous values for both caches
+
+      // Snapshot previous values
       const previousCards = queryClient.getQueryData<Card[]>(queryKeys.userCards(principal));
-      const previousPortfolio = queryClient.getQueryData<PortfolioSnapshot>(queryKeys.portfolioSnapshot(principal));
-      
-      // Optimistically update userCards to remove the card
+      const previousSnapshot = queryClient.getQueryData<PortfolioSnapshot>(queryKeys.portfolioSnapshot(principal));
+
+      // Optimistically update userCards
       if (previousCards) {
         queryClient.setQueryData<Card[]>(
           queryKeys.userCards(principal),
           previousCards.filter(card => card.id !== cardId)
         );
       }
-      
-      // Optimistically update portfolioSnapshot to remove the card
-      if (previousPortfolio) {
-        const updatedCards = previousPortfolio.allCards.filter(card => card.id !== cardId);
+
+      // Optimistically update portfolioSnapshot
+      if (previousSnapshot) {
         queryClient.setQueryData<PortfolioSnapshot>(
           queryKeys.portfolioSnapshot(principal),
           {
-            ...previousPortfolio,
-            allCards: updatedCards,
+            ...previousSnapshot,
+            allCards: previousSnapshot.allCards.filter(card => card.id !== cardId),
           }
         );
       }
-      
-      // Return context with the snapshots
-      return { previousCards, previousPortfolio };
+
+      return { previousCards, previousSnapshot };
     },
     onError: (error: Error, cardId, context) => {
-      // Rollback to the previous values on error
+      // Rollback on error
       if (context?.previousCards) {
-        queryClient.setQueryData(
-          queryKeys.userCards(principal),
-          context.previousCards
-        );
+        queryClient.setQueryData(queryKeys.userCards(principal), context.previousCards);
       }
-      if (context?.previousPortfolio) {
-        queryClient.setQueryData(
-          queryKeys.portfolioSnapshot(principal),
-          context.previousPortfolio
-        );
+      if (context?.previousSnapshot) {
+        queryClient.setQueryData(queryKeys.portfolioSnapshot(principal), context.previousSnapshot);
       }
       console.error('Error deleting card:', error);
-      toast.error(`Error deleting: ${error.message}`);
+      toast.error(`Error deleting card: ${error.message}`);
     },
     onSettled: () => {
-      // Always refetch after mutation settles (success or error) to ensure sync with backend
-      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
     },
     onSuccess: () => {
       toast.success('Card deleted successfully');
@@ -335,234 +434,80 @@ export function useDeleteCard() {
   });
 }
 
-export function useUpdateSalePrice() {
+export function useMarkCardAsSold() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
   const principal = identity?.getPrincipal().toString();
 
   return useMutation({
-    mutationFn: async ({ cardId, newSalePrice }: { cardId: CardId; newSalePrice: number }) => {
+    mutationFn: async (params: { cardId: CardId; salePrice: number; saleDate: Time }) => {
       if (!actor) throw new Error('Actor not available');
       if (!identity) throw new Error('Not logged in');
-      return actor.updateSalePrice(cardId, newSalePrice);
+      
+      return actor.markCardAsSold(params.cardId, params.salePrice, params.saleDate);
     },
     onSuccess: () => {
-      // Consolidated invalidation: only portfolioSnapshot and userCards
-      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
       queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
-      toast.success('Sale price updated');
-    },
-    onError: (error: Error) => {
-      console.error('Error updating sale price:', error);
-      toast.error(`Error updating: ${error.message}`);
-    },
-  });
-}
-
-// Portfolio Snapshot Query - Single query for all portfolio data
-export function useGetPortfolioSnapshot() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<PortfolioSnapshot>({
-    queryKey: queryKeys.portfolioSnapshot(principal),
-    queryFn: async () => {
-      if (!actor) {
-        return {
-          investmentTotals: { totalCashInvested: 0, totalEthInvested: 0 },
-          totalInvested: 0,
-          totalBalance: 0,
-          totalReturns: 0,
-          totalReturnBalance: 0,
-          portfolioTotal: 0,
-          holdBalance: 0,
-          allCards: [],
-        };
-      }
-      if (!identity) {
-        return {
-          investmentTotals: { totalCashInvested: 0, totalEthInvested: 0 },
-          totalInvested: 0,
-          totalBalance: 0,
-          totalReturns: 0,
-          totalReturnBalance: 0,
-          portfolioTotal: 0,
-          holdBalance: 0,
-          allCards: [],
-        };
-      }
-      return actor.getPortfolioSnapshot();
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    // Cache for 30s to reduce redundant fetches
-    staleTime: 30000,
-  });
-}
-
-// Derived query: Get crafted cards (Essence payment method) from portfolio snapshot
-export function useGetCraftedCards() {
-  const { data: portfolio, isLoading, error } = useGetPortfolioSnapshot();
-  
-  const craftedCards = portfolio?.allCards.filter(card => card.paymentMethod === PaymentMethod.essence) || [];
-  
-  return {
-    data: craftedCards,
-    isLoading,
-    error,
-  };
-}
-
-// Transaction groups derived from portfolio snapshot
-export interface TransactionGroup {
-  forSale: Card[];
-  sold: Card[];
-  tradedGiven: Card[];
-  tradedReceived: Card[];
-}
-
-export function useGetTransactionGroups() {
-  const { data: portfolio, isLoading, error } = useGetPortfolioSnapshot();
-  
-  const transactionGroups: TransactionGroup = {
-    forSale: [],
-    sold: [],
-    tradedGiven: [],
-    tradedReceived: [],
-  };
-  
-  if (portfolio?.allCards) {
-    portfolio.allCards.forEach(card => {
-      switch (card.transactionType) {
-        case TransactionType.forSale:
-          transactionGroups.forSale.push(card);
-          break;
-        case TransactionType.sold:
-          transactionGroups.sold.push(card);
-          break;
-        case TransactionType.tradedGiven:
-          transactionGroups.tradedGiven.push(card);
-          break;
-        case TransactionType.tradedReceived:
-          transactionGroups.tradedReceived.push(card);
-          break;
-      }
-    });
-  }
-  
-  return {
-    data: transactionGroups,
-    isLoading,
-    error,
-  };
-}
-
-// Stub implementations for missing backend methods
-// These show appropriate error messages until backend support is added
-
-export function useMarkCardAsSold() {
-  return useMutation({
-    mutationFn: async ({ cardId, salePrice, saleDate }: { cardId: CardId; salePrice: number; saleDate: Time | null }) => {
-      toast.error('Selling cards is not yet supported. Please contact support.');
-      throw new Error('Backend method markCardAsSold not implemented');
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
+      toast.success('Card marked as sold');
     },
     onError: (error: Error) => {
       console.error('Error marking card as sold:', error);
+      toast.error(`Error: ${error.message}`);
     },
   });
 }
 
 export function useRecordTradeTransaction() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
   return useMutation({
-    mutationFn: async ({ givenCardIds, receivedCardIds }: { givenCardIds: CardId[]; receivedCardIds: CardId[] }) => {
-      toast.error('Trading cards is not yet supported. Please contact support.');
-      throw new Error('Backend method recordTradeTransaction not implemented');
+    mutationFn: async (params: { givenCardIds: CardId[]; receivedCardIds: CardId[] }) => {
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
+      
+      return actor.recordTradeTransaction(params.givenCardIds, params.receivedCardIds);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
+      toast.success('Trade recorded successfully');
     },
     onError: (error: Error) => {
       console.error('Error recording trade:', error);
+      toast.error(`Error: ${error.message}`);
     },
   });
 }
 
 export function useRevertTradeTransaction() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
   return useMutation({
-    mutationFn: async (cardIds: CardId[]) => {
-      toast.error('Reverting trades is not yet supported. Please contact support.');
-      throw new Error('Backend method revertTradeTransaction not implemented');
+    mutationFn: async (params: { cardId: CardId; tradeTransaction: TradeTransaction }) => {
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
+      
+      return actor.revertTradeTransaction(params.cardId, params.tradeTransaction);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userCards(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.portfolioSnapshot(principal) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
+      toast.success('Trade reverted successfully');
     },
     onError: (error: Error) => {
       console.error('Error reverting trade:', error);
+      toast.error(`Error: ${error.message}`);
     },
-  });
-}
-
-// Legacy queries kept for backward compatibility but deprecated
-// These are now derived from portfolioSnapshot where possible
-export function useCalculateTotalInvested() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<number>({
-    queryKey: queryKeys.totalInvested(principal),
-    queryFn: async () => {
-      if (!actor) return 0;
-      if (!identity) return 0;
-      return actor.calculateTotalInvested();
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    staleTime: 30000,
-  });
-}
-
-export function useCalculateTotalReturns() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<number>({
-    queryKey: queryKeys.totalReturns(principal),
-    queryFn: async () => {
-      if (!actor) return 0;
-      if (!identity) return 0;
-      return actor.calculateTotalReturns();
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    staleTime: 30000,
-  });
-}
-
-export function useCalculateInvestmentTotals() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<InvestmentTotals>({
-    queryKey: queryKeys.investmentTotals(principal),
-    queryFn: async () => {
-      if (!actor) return { totalCashInvested: 0, totalEthInvested: 0 };
-      if (!identity) return { totalCashInvested: 0, totalEthInvested: 0 };
-      return actor.calculateInvestmentTotals();
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    staleTime: 30000,
-  });
-}
-
-export function useGetSoldCardBalance() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-  const principal = identity?.getPrincipal().toString();
-
-  return useQuery<number>({
-    queryKey: queryKeys.soldCardBalance(principal),
-    queryFn: async () => {
-      if (!actor) return 0;
-      if (!identity) return 0;
-      return actor.getSoldCardBalance();
-    },
-    enabled: !!actor && !isFetching && !!identity,
-    staleTime: 30000,
   });
 }

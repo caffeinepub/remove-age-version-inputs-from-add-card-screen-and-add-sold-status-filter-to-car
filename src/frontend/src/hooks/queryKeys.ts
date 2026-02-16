@@ -15,4 +15,5 @@ export const queryKeys = {
   transactionGroups: (principal: string | undefined) => ['transactionGroups', principal] as const,
   craftedCardsCount: (principal: string | undefined) => ['craftedCardsCount', principal] as const,
   soldCardBalance: (principal: string | undefined) => ['soldCardBalance', principal] as const,
+  changeHistory: (principal: string | undefined) => ['changeHistory', principal] as const,
 };

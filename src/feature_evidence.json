@@ -2,33 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-portfolio-ui-updates-immediately-after-a-card-is-deleted-from-the-gallery-using-the-same-underlying-data-source-as-the-gallery-react-query-and-or-ensuring-the-portfolio-snapshot-query-is-reliably-refetched-updated-after-deletion",
-      "featureTitle": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
+      "featureId": "feature-update-the-history-page-ui-to-display-clearer-more-informative-entries-for-changes-to-existing-cards-by-showing-card-names-not-only-ids-wherever-possible-and-by-showing-an-explicit-absolute-date-time-for-each-history-entry-in-addition-to-the-relative-time-already-displayed",
+      "featureTitle": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
       "files": [
-        "frontend/src/hooks/queryKeys.ts",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "blob-storage@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "http-outcalls@3.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-fix-gallery-state-synchronization-so-that-the-gallery-reflects-the-backend-as-the-source-of-truth-after-deletion-including-correctly-handling-optimistic-updates-and-ensuring-the-ui-reconciles-with-the-backend-result",
-      "featureTitle": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
-      "files": [
-        "frontend/src/hooks/queryKeys.ts",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/pages/HistoryPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",

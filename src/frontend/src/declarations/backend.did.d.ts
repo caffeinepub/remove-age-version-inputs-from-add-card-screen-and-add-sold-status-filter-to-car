@@ -35,6 +35,19 @@ export interface Card {
 }
 export type CardId = bigint;
 export interface CardWithUser { 'cards' : Array<Card>, 'user' : Principal }
+export type ChangeAction = { 'updateSalePrice' : null } |
+  { 'trade' : null } |
+  { 'addCard' : null } |
+  { 'markSold' : null } |
+  { 'deleteCard' : null } |
+  { 'revertTrade' : null } |
+  { 'editCard' : null };
+export interface ChangeHistoryEntry {
+  'action' : ChangeAction,
+  'summary' : string,
+  'timestamp' : Time,
+  'cardIds' : Array<CardId>,
+}
 export type ExternalBlob = Uint8Array;
 export interface InvestmentTotals {
   'totalCashInvested' : number,
@@ -132,10 +145,17 @@ export interface _SERVICE {
   'getAllCardsWithUser' : ActorMethod<[Principal], CardWithUser>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getChangeHistory' : ActorMethod<[bigint, bigint], Array<ChangeHistoryEntry>>,
   'getPortfolioSnapshot' : ActorMethod<[], PortfolioSnapshot>,
   'getSoldCardBalance' : ActorMethod<[], number>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'markCardAsSold' : ActorMethod<[CardId, number, Time], undefined>,
+  'recordTradeTransaction' : ActorMethod<
+    [Array<CardId>, Array<CardId>],
+    undefined
+  >,
+  'revertTradeTransaction' : ActorMethod<[CardId, TradeTransaction], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateCard' : ActorMethod<
     [

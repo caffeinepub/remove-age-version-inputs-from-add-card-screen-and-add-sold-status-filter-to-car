@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { type Card, type CardId, TransactionType, PaymentMethod, Position } from '../backend';
-import { useMarkCardAsSold, useRecordTradeTransaction, useGetUserCards, useAddCard } from '../hooks/useQueries';
+import { useMarkCardAsSold, useRecordTradeTransaction, useAddCard } from '../hooks/useQueries';
+import { type Card, PaymentMethod, Position } from '../backend';
 import {
   Dialog,
   DialogContent,
@@ -9,74 +9,19 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { Card as CardUI, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus } from 'lucide-react';
 
 interface SellOrTradeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   card: Card;
-}
-
-interface NewCardData {
-  name: string;
-  rarity: string;
-  purchasePrice: string;
-  discountPercent: string;
-  paymentMethod: PaymentMethod | '';
-  purchaseDate: string;
-  notes: string;
-  country: string;
-  league: string;
-  club: string;
-  position: Position | '';
-  age: string;
-  version: string;
-  season: string;
-}
-
-// Helper function to get rarity styling with safe fallback
-function getRarityStyle(rarity: string): string {
-  const normalizedRarity = rarity.toLowerCase();
-  
-  if (normalizedRarity === 'limited') {
-    return 'border-[3px] border-yellow-500 bg-gradient-to-br from-yellow-500/10 to-yellow-600/5';
-  } else if (normalizedRarity === 'rare') {
-    return 'border-[3px] border-red-500 bg-gradient-to-br from-red-500/10 to-red-600/5';
-  } else if (normalizedRarity === 'superrare' || normalizedRarity === 'super rare') {
-    return 'border-[3px] border-blue-500 bg-gradient-to-br from-blue-500/10 to-blue-600/5';
-  } else if (normalizedRarity === 'special' || normalizedRarity === 'spezial') {
-    return 'border-[3px] border-gray-500 bg-gradient-to-br from-gray-500/10 to-gray-600/5';
-  }
-  
-  // Default fallback for unknown rarities
-  return 'border-[3px] border-purple-500 bg-gradient-to-br from-purple-500/10 to-purple-600/5';
-}
-
-// Helper function to get rarity badge color with safe fallback
-function getRarityBadgeColor(rarity: string): string {
-  const normalizedRarity = rarity.toLowerCase();
-  
-  if (normalizedRarity === 'limited') {
-    return 'bg-yellow-500/90 text-white border-yellow-600';
-  } else if (normalizedRarity === 'rare') {
-    return 'bg-red-500/90 text-white border-red-600';
-  } else if (normalizedRarity === 'superrare' || normalizedRarity === 'super rare') {
-    return 'bg-blue-500/90 text-white border-blue-600';
-  } else if (normalizedRarity === 'special' || normalizedRarity === 'spezial') {
-    return 'bg-gray-500/90 text-white border-gray-600';
-  }
-  
-  // Default fallback for unknown rarities
-  return 'bg-purple-500/90 text-white border-purple-600';
 }
 
 const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -93,532 +38,473 @@ const positionLabels: Record<Position, string> = {
   [Position.sturm]: 'Sturm',
 };
 
-const emptyNewCard: NewCardData = {
-  name: '',
-  rarity: '',
-  purchasePrice: '',
-  discountPercent: '',
-  paymentMethod: '',
-  purchaseDate: '',
-  notes: '',
-  country: '',
-  league: '',
-  club: '',
-  position: '',
-  age: '',
-  version: '',
-  season: '',
-};
+// Helper function to get rarity badge color
+function getRarityColor(rarity: string): string {
+  const rarityLower = rarity.toLowerCase();
+  if (rarityLower.includes('limited')) return 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30';
+  if (rarityLower.includes('rare')) return 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30';
+  if (rarityLower.includes('super')) return 'bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/30';
+  if (rarityLower.includes('unique')) return 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border-yellow-500/30';
+  return 'bg-gray-500/20 text-gray-700 dark:text-gray-300 border-gray-500/30';
+}
 
 export default function SellOrTradeDialog({ open, onOpenChange, card }: SellOrTradeDialogProps) {
+  // Sell tab state
   const [salePrice, setSalePrice] = useState('');
-  const [saleDate, setSaleDate] = useState('');
-  const [activeTab, setActiveTab] = useState<'sell' | 'trade'>('sell');
-  const [newCardsToAdd, setNewCardsToAdd] = useState<NewCardData[]>([]);
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Trade tab state
   const [showAddCardForm, setShowAddCardForm] = useState(false);
-  const [currentNewCard, setCurrentNewCard] = useState<NewCardData>(emptyNewCard);
+  const [receivedCards, setReceivedCards] = useState<Array<{
+    name: string;
+    rarity: string;
+    purchasePrice: number;
+    discountPercent: number;
+    paymentMethod: PaymentMethod;
+    country: string;
+    league: string;
+    club: string;
+    age: number;
+    version: string;
+    season: string;
+    position: Position;
+    notes: string;
+  }>>([]);
 
-  const { mutate: markCardAsSold, isPending: isSelling } = useMarkCardAsSold();
-  const { mutateAsync: addCard } = useAddCard();
-  const { mutate: recordTrade, isPending: isTrading } = useRecordTradeTransaction();
+  // Add card form state
+  const [cardName, setCardName] = useState('');
+  const [cardRarity, setCardRarity] = useState('');
+  const [cardPurchasePrice, setCardPurchasePrice] = useState('');
+  const [cardDiscountPercent, setCardDiscountPercent] = useState('');
+  const [cardPaymentMethod, setCardPaymentMethod] = useState<PaymentMethod | ''>(PaymentMethod.trade);
+  const [cardCountry, setCardCountry] = useState('');
+  const [cardLeague, setCardLeague] = useState('');
+  const [cardClub, setCardClub] = useState('');
+  const [cardAge, setCardAge] = useState('');
+  const [cardVersion, setCardVersion] = useState('');
+  const [cardSeason, setCardSeason] = useState('');
+  const [cardPosition, setCardPosition] = useState<Position | ''>('');
+  const [cardNotes, setCardNotes] = useState('');
 
-  const actualPurchasePrice = card.purchasePrice * (1 - card.discountPercent / 100);
+  const { mutateAsync: markAsSold, isPending: isSelling } = useMarkCardAsSold();
+  const { mutateAsync: recordTrade, isPending: isTrading } = useRecordTradeTransaction();
+  const { mutateAsync: addCard, isPending: isAddingCard } = useAddCard();
 
-  const handleSell = () => {
-    const price = parseFloat(salePrice);
-    if (isNaN(price) || price < 0) {
-      return;
-    }
-    const saleDateValue = saleDate.trim() === '' ? null : BigInt(new Date(saleDate).getTime() * 1000000);
+  const handleSell = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    markCardAsSold(
-      {
-        cardId: card.id,
-        salePrice: price,
-        saleDate: saleDateValue,
-      },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setSalePrice('');
-          setSaleDate('');
-        },
-      }
-    );
-  };
+    if (!salePrice || !saleDate) return;
 
-  const handleTrade = async () => {
-    if (newCardsToAdd.length === 0) {
-      return;
-    }
+    const saleDateValue = BigInt(new Date(saleDate).getTime() * 1000000);
 
     try {
-      // First, add all new cards and collect their IDs
-      const newCardIds: CardId[] = [];
+      await markAsSold({
+        cardId: card.id,
+        salePrice: parseFloat(salePrice),
+        saleDate: saleDateValue,
+      });
       
-      for (const newCardData of newCardsToAdd) {
-        const discount = newCardData.discountPercent.trim() === '' ? 0 : parseFloat(newCardData.discountPercent);
-        const cardAge = newCardData.age.trim() === '' ? 0 : parseInt(newCardData.age);
-        const purchaseDateValue = newCardData.purchaseDate.trim() === '' ? null : BigInt(new Date(newCardData.purchaseDate).getTime() * 1000000);
+      setSalePrice('');
+      setSaleDate(new Date().toISOString().split('T')[0]);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to mark card as sold:', error);
+    }
+  };
 
-        const cardId = await addCard({
-          name: newCardData.name.trim(),
-          rarity: newCardData.rarity.trim(),
-          purchasePrice: parseFloat(newCardData.purchasePrice),
-          discountPercent: discount,
-          paymentMethod: newCardData.paymentMethod as PaymentMethod,
-          purchaseDate: purchaseDateValue,
-          notes: newCardData.notes.trim(),
-          country: newCardData.country.trim(),
-          league: newCardData.league.trim(),
-          club: newCardData.club.trim(),
-          position: newCardData.position as Position,
-          age: cardAge,
-          version: newCardData.version.trim(),
-          season: newCardData.season.trim(),
-        });
-        
-        newCardIds.push(cardId);
-      }
+  const handleAddReceivedCard = () => {
+    if (!cardName.trim() || !cardRarity.trim() || !cardPaymentMethod || !cardPosition) return;
+
+    const discount = cardDiscountPercent.trim() === '' ? 0 : parseFloat(cardDiscountPercent);
+    const price = cardPurchasePrice.trim() === '' ? 0 : parseFloat(cardPurchasePrice);
+    const age = cardAge.trim() === '' ? 0 : parseInt(cardAge);
+
+    setReceivedCards([...receivedCards, {
+      name: cardName.trim(),
+      rarity: cardRarity.trim(),
+      purchasePrice: price,
+      discountPercent: discount,
+      paymentMethod: cardPaymentMethod as PaymentMethod,
+      country: cardCountry.trim(),
+      league: cardLeague.trim(),
+      club: cardClub.trim(),
+      age,
+      version: cardVersion.trim(),
+      season: cardSeason.trim(),
+      position: cardPosition as Position,
+      notes: cardNotes.trim(),
+    }]);
+
+    // Reset form
+    setCardName('');
+    setCardRarity('');
+    setCardPurchasePrice('');
+    setCardDiscountPercent('');
+    setCardPaymentMethod(PaymentMethod.trade);
+    setCardCountry('');
+    setCardLeague('');
+    setCardClub('');
+    setCardAge('');
+    setCardVersion('');
+    setCardSeason('');
+    setCardPosition('');
+    setCardNotes('');
+    setShowAddCardForm(false);
+  };
+
+  const handleRemoveReceivedCard = (index: number) => {
+    setReceivedCards(receivedCards.filter((_, i) => i !== index));
+  };
+
+  const handleTrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (receivedCards.length === 0) return;
+
+    try {
+      // First, add all received cards
+      const receivedCardIds = await Promise.all(
+        receivedCards.map(async (receivedCard) => {
+          return await addCard({
+            name: receivedCard.name,
+            rarity: receivedCard.rarity,
+            purchasePrice: receivedCard.purchasePrice,
+            discountPercent: receivedCard.discountPercent,
+            paymentMethod: receivedCard.paymentMethod,
+            country: receivedCard.country,
+            league: receivedCard.league,
+            club: receivedCard.club,
+            age: BigInt(receivedCard.age),
+            version: receivedCard.version,
+            season: receivedCard.season,
+            position: receivedCard.position,
+            purchaseDate: null,
+            notes: receivedCard.notes,
+            image: null,
+          });
+        })
+      );
 
       // Then record the trade transaction
-      recordTrade(
-        {
-          givenCardIds: [card.id],
-          receivedCardIds: newCardIds,
-        },
-        {
-          onSuccess: () => {
-            onOpenChange(false);
-            setNewCardsToAdd([]);
-            setShowAddCardForm(false);
-            setCurrentNewCard(emptyNewCard);
-          },
-        }
-      );
+      await recordTrade({
+        givenCardIds: [card.id],
+        receivedCardIds,
+      });
+
+      setReceivedCards([]);
+      onOpenChange(false);
     } catch (error) {
-      console.error('Fehler beim Tausch:', error);
+      console.error('Failed to record trade:', error);
     }
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    setSalePrice('');
-    setSaleDate('');
-    setNewCardsToAdd([]);
-    setShowAddCardForm(false);
-    setCurrentNewCard(emptyNewCard);
-    setActiveTab('sell');
-  };
-
-  const isNewCardFormValid = 
-    currentNewCard.name.trim().length > 0 && 
-    currentNewCard.rarity.trim().length > 0 && 
-    currentNewCard.purchasePrice.trim().length > 0 && 
-    !isNaN(parseFloat(currentNewCard.purchasePrice)) && 
-    parseFloat(currentNewCard.purchasePrice) >= 0 &&
-    currentNewCard.paymentMethod !== '' &&
-    currentNewCard.country.trim().length > 0 &&
-    currentNewCard.league.trim().length > 0 &&
-    currentNewCard.club.trim().length > 0 &&
-    currentNewCard.position !== '' &&
-    currentNewCard.age.trim().length > 0 &&
-    !isNaN(parseInt(currentNewCard.age)) &&
-    parseInt(currentNewCard.age) >= 0 &&
-    currentNewCard.version.trim().length > 0 &&
-    currentNewCard.season.trim().length > 0;
-
-  const handleAddNewCardToList = () => {
-    if (isNewCardFormValid) {
-      setNewCardsToAdd([...newCardsToAdd, currentNewCard]);
-      setCurrentNewCard(emptyNewCard);
-      setShowAddCardForm(false);
-    }
-  };
-
-  const handleRemoveNewCard = (index: number) => {
-    setNewCardsToAdd(newCardsToAdd.filter((_, i) => i !== index));
-  };
-
-  const renderNewCardPreview = (newCardData: NewCardData, index: number) => {
-    const actualPrice = parseFloat(newCardData.purchasePrice) * (1 - (parseFloat(newCardData.discountPercent || '0') / 100));
-
-    return (
-      <CardUI
-        key={index}
-        className={`relative ${getRarityStyle(newCardData.rarity)}`}
-      >
-        <Button
-          variant="destructive"
-          size="sm"
-          className="absolute top-2 right-2 h-6 w-6 p-0 z-10"
-          onClick={() => handleRemoveNewCard(index)}
-        >
-          <X className="w-3 h-3" />
-        </Button>
-
-        <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
-          <div className="w-full h-[180px] flex flex-col items-center justify-center p-3 text-center space-y-1.5">
-            <h3 className="text-white font-bold text-sm leading-tight">{newCardData.name}</h3>
-            <div className="w-full space-y-1 text-white/90 text-xs">
-              <div><span className="font-semibold">{newCardData.country}</span></div>
-              <div><span className="font-medium">{newCardData.league}</span></div>
-              <div><span className="font-medium">{newCardData.club}</span></div>
-            </div>
-          </div>
-          <div className="absolute top-2 left-2">
-            <Badge className={`${getRarityBadgeColor(newCardData.rarity)} border font-semibold shadow-lg text-xs`}>
-              {newCardData.rarity}
-            </Badge>
-          </div>
-        </div>
-
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm line-clamp-1">{newCardData.name}</CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-1 pb-3">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Bezahlart:</span>
-            <span className="font-medium">{paymentMethodLabels[newCardData.paymentMethod as PaymentMethod]}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Kaufpreis:</span>
-            <span className="font-semibold">
-              {newCardData.paymentMethod === PaymentMethod.essence ? actualPrice.toFixed(2) : `€${actualPrice.toFixed(2)}`}
-            </span>
-          </div>
-        </CardContent>
-      </CardUI>
-    );
-  };
+  const isAddCardFormValid = 
+    cardName.trim().length > 0 && 
+    cardRarity.trim().length > 0 &&
+    cardPaymentMethod !== '' &&
+    cardCountry.trim().length > 0 &&
+    cardLeague.trim().length > 0 &&
+    cardClub.trim().length > 0 &&
+    cardPosition !== '' &&
+    cardSeason.trim().length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Karte verkaufen oder tauschen</DialogTitle>
+          <DialogTitle>Verkaufen oder Tauschen</DialogTitle>
           <DialogDescription>
-            Wähle, ob du "{card.name}" verkaufen oder gegen andere Karten tauschen möchtest.
+            Verkaufe die Karte oder tausche sie gegen andere Karten.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'sell' | 'trade')} className="w-full">
+        <Tabs defaultValue="sell" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="sell">Verkaufen</TabsTrigger>
             <TabsTrigger value="trade">Tauschen</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="sell" className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="salePrice">Verkaufspreis (€)</Label>
-              <Input
-                id="salePrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={salePrice}
-                onChange={(e) => setSalePrice(e.target.value)}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="saleDate">Verkaufsdatum</Label>
-              <Input
-                id="saleDate"
-                type="date"
-                value={saleDate}
-                onChange={(e) => setSaleDate(e.target.value)}
-              />
-            </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <div>Ursprünglicher Kaufpreis: €{card.purchasePrice.toFixed(2)}</div>
-              {card.discountPercent > 0 && (
-                <div>Rabatt: {card.discountPercent.toFixed(1)}%</div>
-              )}
-              <div className="font-semibold">Tatsächlicher Kaufpreis: €{actualPurchasePrice.toFixed(2)}</div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="trade" className="space-y-4 py-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Karten hinzufügen, die du im Tausch erhältst:</Label>
-                <Badge variant="secondary" className="text-sm">
-                  {newCardsToAdd.length} hinzugefügt
+          <TabsContent value="sell" className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <h3 className="font-semibold mb-2">{card.name}</h3>
+              <div className="flex gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline" className={getRarityColor(card.rarity)}>
+                  {card.rarity}
                 </Badge>
+                <span>•</span>
+                <span>Kaufpreis: €{card.purchasePrice.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSell} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="salePrice">Verkaufspreis (€) *</Label>
+                <Input
+                  id="salePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={salePrice}
+                  onChange={(e) => setSalePrice(e.target.value)}
+                  placeholder="0.00"
+                  required
+                />
               </div>
 
-              {/* Add Card Button */}
-              {!showAddCardForm && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowAddCardForm(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Karte hinzufügen
+              <div className="space-y-2">
+                <Label htmlFor="saleDate">Verkaufsdatum *</Label>
+                <Input
+                  id="saleDate"
+                  type="date"
+                  value={saleDate}
+                  onChange={(e) => setSaleDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSelling}>
+                  Abbrechen
                 </Button>
+                <Button type="submit" disabled={isSelling || !salePrice || !saleDate}>
+                  {isSelling ? 'Verkauft...' : 'Als verkauft markieren'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="trade" className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <h3 className="font-semibold mb-2">Getauschte Karte</h3>
+              <div className="flex gap-2 text-sm">
+                <Badge variant="outline" className={getRarityColor(card.rarity)}>
+                  {card.rarity}
+                </Badge>
+                <span className="text-muted-foreground">{card.name}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Erhaltene Karten ({receivedCards.length})</h3>
+                {!showAddCardForm && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddCardForm(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Karte hinzufügen
+                  </Button>
+                )}
+              </div>
+
+              {receivedCards.length > 0 && (
+                <div className="space-y-2">
+                  {receivedCards.map((receivedCard, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                      <div className="flex gap-2 items-center">
+                        <Badge variant="outline" className={getRarityColor(receivedCard.rarity)}>
+                          {receivedCard.rarity}
+                        </Badge>
+                        <span className="text-sm">{receivedCard.name}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveReceivedCard(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
 
-              {/* Add Card Form */}
               {showAddCardForm && (
-                <div className="relative border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold">Neue Karte hinzufügen</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShowAddCardForm(false);
-                        setCurrentNewCard(emptyNewCard);
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                  <h4 className="font-semibold text-sm">Neue Karte hinzufügen</h4>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardName" className="text-sm">Kartenname *</Label>
+                    <Input
+                      id="trade-cardName"
+                      value={cardName}
+                      onChange={(e) => setCardName(e.target.value)}
+                      placeholder="z.B. Ronaldo Limited"
+                      className="h-9"
+                    />
                   </div>
 
-                  <ScrollArea className="max-h-[350px] pr-4">
-                    <div className="space-y-3 pb-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardName" className="text-sm">Kartenname *</Label>
-                        <Input
-                          id="newCardName"
-                          value={currentNewCard.name}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, name: e.target.value })}
-                          placeholder="z.B. Messi Gold Edition"
-                          className="h-9"
-                        />
-                      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardRarity" className="text-sm">Seltenheit *</Label>
+                    <Input
+                      id="trade-cardRarity"
+                      value={cardRarity}
+                      onChange={(e) => setCardRarity(e.target.value)}
+                      placeholder="z.B. Limited, Rare"
+                      className="h-9"
+                    />
+                  </div>
 
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardRarity" className="text-sm">Seltenheit *</Label>
-                        <Input
-                          id="newCardRarity"
-                          value={currentNewCard.rarity}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, rarity: e.target.value })}
-                          placeholder="z.B. Limited, Rare, Super Rare, Spezial"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="newCardPrice" className="text-sm">Kaufpreis (€) *</Label>
-                          <Input
-                            id="newCardPrice"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={currentNewCard.purchasePrice}
-                            onChange={(e) => setCurrentNewCard({ ...currentNewCard, purchasePrice: e.target.value })}
-                            placeholder="0.00"
-                            className="h-9"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor="newCardDiscount" className="text-sm">Rabatt (%)</Label>
-                          <Input
-                            id="newCardDiscount"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="100"
-                            value={currentNewCard.discountPercent}
-                            onChange={(e) => setCurrentNewCard({ ...currentNewCard, discountPercent: e.target.value })}
-                            placeholder="0.00"
-                            className="h-9"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardPayment" className="text-sm">Bezahlart *</Label>
-                        <Select value={currentNewCard.paymentMethod} onValueChange={(value) => setCurrentNewCard({ ...currentNewCard, paymentMethod: value as PaymentMethod })}>
-                          <SelectTrigger id="newCardPayment" className="h-9">
-                            <SelectValue placeholder="Wähle eine Bezahlart" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(paymentMethodLabels).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardPurchaseDate" className="text-sm">Kaufdatum</Label>
-                        <Input
-                          id="newCardPurchaseDate"
-                          type="date"
-                          value={currentNewCard.purchaseDate}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, purchaseDate: e.target.value })}
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardNotes" className="text-sm">Notizen</Label>
-                        <Textarea
-                          id="newCardNotes"
-                          value={currentNewCard.notes}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, notes: e.target.value })}
-                          placeholder="Zusätzliche Notizen zur Karte..."
-                          className="min-h-[60px] resize-none"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardCountry" className="text-sm">Land *</Label>
-                        <Input
-                          id="newCardCountry"
-                          value={currentNewCard.country}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, country: e.target.value })}
-                          placeholder="z.B. Deutschland"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardLeague" className="text-sm">Liga *</Label>
-                        <Input
-                          id="newCardLeague"
-                          value={currentNewCard.league}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, league: e.target.value })}
-                          placeholder="z.B. Bundesliga"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardClub" className="text-sm">Club *</Label>
-                        <Input
-                          id="newCardClub"
-                          value={currentNewCard.club}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, club: e.target.value })}
-                          placeholder="z.B. Bayern München"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardPosition" className="text-sm">Position *</Label>
-                        <Select value={currentNewCard.position} onValueChange={(value) => setCurrentNewCard({ ...currentNewCard, position: value as Position })}>
-                          <SelectTrigger id="newCardPosition" className="h-9">
-                            <SelectValue placeholder="Wähle eine Position" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(positionLabels).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardAge" className="text-sm">Alter *</Label>
-                        <Input
-                          id="newCardAge"
-                          type="number"
-                          min="0"
-                          value={currentNewCard.age}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, age: e.target.value })}
-                          placeholder="0"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardVersion" className="text-sm">Version *</Label>
-                        <Input
-                          id="newCardVersion"
-                          value={currentNewCard.version}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, version: e.target.value })}
-                          placeholder="z.B. Gold, Silver"
-                          className="h-9"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="newCardSeason" className="text-sm">Saison *</Label>
-                        <Input
-                          id="newCardSeason"
-                          value={currentNewCard.season}
-                          onChange={(e) => setCurrentNewCard({ ...currentNewCard, season: e.target.value })}
-                          placeholder="z.B. 2024/25"
-                          className="h-9"
-                        />
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="trade-cardPurchasePrice" className="text-sm">Kaufpreis (€)</Label>
+                      <Input
+                        id="trade-cardPurchasePrice"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={cardPurchasePrice}
+                        onChange={(e) => setCardPurchasePrice(e.target.value)}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
                     </div>
-                  </ScrollArea>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="trade-cardDiscountPercent" className="text-sm">Rabatt (%)</Label>
+                      <Input
+                        id="trade-cardDiscountPercent"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={cardDiscountPercent}
+                        onChange={(e) => setCardDiscountPercent(e.target.value)}
+                        placeholder="0.00"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardPaymentMethod" className="text-sm">Bezahlart *</Label>
+                    <Select value={cardPaymentMethod} onValueChange={(value) => setCardPaymentMethod(value as PaymentMethod)}>
+                      <SelectTrigger id="trade-cardPaymentMethod" className="h-9">
+                        <SelectValue placeholder="Wähle eine Bezahlart" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(paymentMethodLabels).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardCountry" className="text-sm">Land *</Label>
+                    <Input
+                      id="trade-cardCountry"
+                      value={cardCountry}
+                      onChange={(e) => setCardCountry(e.target.value)}
+                      placeholder="z.B. Deutschland"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardLeague" className="text-sm">Liga *</Label>
+                    <Input
+                      id="trade-cardLeague"
+                      value={cardLeague}
+                      onChange={(e) => setCardLeague(e.target.value)}
+                      placeholder="z.B. Bundesliga"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardClub" className="text-sm">Club *</Label>
+                    <Input
+                      id="trade-cardClub"
+                      value={cardClub}
+                      onChange={(e) => setCardClub(e.target.value)}
+                      placeholder="z.B. Bayern München"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardPosition" className="text-sm">Position *</Label>
+                    <Select value={cardPosition} onValueChange={(value) => setCardPosition(value as Position)}>
+                      <SelectTrigger id="trade-cardPosition" className="h-9">
+                        <SelectValue placeholder="Wähle eine Position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(positionLabels).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardSeason" className="text-sm">Saison *</Label>
+                    <Input
+                      id="trade-cardSeason"
+                      value={cardSeason}
+                      onChange={(e) => setCardSeason(e.target.value)}
+                      placeholder="z.B. 2024/25"
+                      className="h-9"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trade-cardNotes" className="text-sm">Notizen</Label>
+                    <Textarea
+                      id="trade-cardNotes"
+                      value={cardNotes}
+                      onChange={(e) => setCardNotes(e.target.value)}
+                      placeholder="Zusätzliche Notizen..."
+                      className="min-h-[60px] resize-none"
+                    />
+                  </div>
 
                   <div className="flex gap-2 pt-2">
                     <Button
                       type="button"
                       variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddCardForm(false)}
                       className="flex-1"
-                      onClick={() => {
-                        setShowAddCardForm(false);
-                        setCurrentNewCard(emptyNewCard);
-                      }}
                     >
                       Abbrechen
                     </Button>
                     <Button
                       type="button"
+                      size="sm"
+                      onClick={handleAddReceivedCard}
+                      disabled={!isAddCardFormValid}
                       className="flex-1"
-                      onClick={handleAddNewCardToList}
-                      disabled={!isNewCardFormValid}
                     >
-                      Zur Liste hinzufügen
+                      Karte hinzufügen
                     </Button>
                   </div>
                 </div>
               )}
-
-              {/* Preview of added cards */}
-              {newCardsToAdd.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm">Hinzugefügte Karten:</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {newCardsToAdd.map((newCard, index) => renderNewCardPreview(newCard, index))}
-                  </div>
-                </div>
-              )}
             </div>
+
+            {!showAddCardForm && (
+              <form onSubmit={handleTrade}>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isTrading || isAddingCard}>
+                    Abbrechen
+                  </Button>
+                  <Button type="submit" disabled={isTrading || isAddingCard || receivedCards.length === 0}>
+                    {isTrading || isAddingCard ? 'Tauscht...' : 'Tausch abschließen'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            )}
           </TabsContent>
         </Tabs>
-
-        {/* Footer buttons - hidden when add card form is active */}
-        {!showAddCardForm && (
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose} disabled={isSelling || isTrading}>
-              Abbrechen
-            </Button>
-            {activeTab === 'sell' ? (
-              <Button
-                onClick={handleSell}
-                disabled={isSelling || !salePrice || parseFloat(salePrice) < 0}
-              >
-                {isSelling ? 'Verkauft...' : 'Verkaufen'}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleTrade}
-                disabled={isTrading || newCardsToAdd.length === 0}
-              >
-                {isTrading ? 'Tauscht...' : 'Tausch abschließen'}
-              </Button>
-            )}
-          </DialogFooter>
-        )}
       </DialogContent>
     </Dialog>
   );

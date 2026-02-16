@@ -1,54 +1,78 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T23:29:13.912Z",
-  "summary": "Frontend changes add centralized, principal-scoped React Query keys and (per the diff summary) implement improved optimistic deletion handling with cache updates/rollback and portfolio snapshot invalidation. However, the diff does not provide evidence that the backend deletion operation was fixed to persist removals and return a clear error for missing card IDs. The diff also appears to introduce multiple unrelated UI/auth changes outside the deletion-sync scope.",
+  "generatedAt": "2026-02-16T23:55:30.622Z",
+  "summary": "Frontend HistoryPage was updated to resolve card IDs to names (when cards still exist) and the query layer appears to keep infinite-pagination. However, the diff summary does not show any concrete backend changes implementing before/after field-level history summaries for edit/update/sale/delete/sold actions. The diff also introduces unrelated frontend changes (including Google OAuth) and modifies files explicitly called out as immutable by the BuildRequest constraints. A backend migration file was added even though no state upgrade need is evidenced.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "[backend] Fix card deletion so deletion is persisted and deleted cards never reappear after refresh; return a clear error if deleting a non-existent card for that user.",
-      "reason": "The provided backend diff snippet shows types, card storage, getAllCardsForUser(), and addCard(), but does not show any delete operation implementation or changes ensuring deletion persistence or explicit error on non-existent IDs. With truncation and no delete-related evidence, this requirement cannot be confirmed as implemented.",
+      "requirement": "Enhance backend change-history logging for updateCard so #editCard summaries list each changed field with before/after values; and handle no-op edits consistently; keep ChangeHistoryEntry shape compatible.",
+      "reason": "backend/main.mo is truncated and only shows a generic logChange function and type definitions; there is no visible implementation of field-diffing for updateCard nor any no-op handling behavior for identical submissions.",
       "evidence": [
         "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Improve change-history summaries for updateSalePrice/deleteCard/markCardAsSold to include before/after context (old→new sale price, deleted card name, sale price and human-readable sale date/time).",
+      "reason": "The provided backend diff excerpt does not show any changes to updateSalePrice/deleteCard/markCardAsSold logging; only shared types and a generic logChange helper are visible.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "History entries show an explicit absolute timestamp string in the UI (in addition to existing relative time), while keeping pagination/infinite-load.",
+      "reason": "HistoryPage.tsx imports formatTimestamp and Calendar/Clock icons, but the diff content is truncated before the history item rendering; the excerpt does not show absolute timestamp being rendered as visible text (not just a title/hover).",
+      "evidence": [
+        "frontend/src/pages/HistoryPage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added Google OAuth2 authentication hook and related login/logout flows.",
-      "reason": "BuildRequest explicitly lists changing authentication (Internet Identity) behavior as a non-goal; Google OAuth2 is not requested and may conflict with that constraint.",
+      "description": "Added backend migration module and wired it into the actor even though no state upgrade requirement is evidenced.",
+      "reason": "BuildRequest says to only add migration code if a state upgrade is strictly required; the diff adds backend/migration.mo (a no-op run) and imports/uses it in backend/main.mo without showing any need.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/hooks/useGoogleAuth.ts\": \"Custom React hook implementing real Google OAuth2 authentication...\")"
+        "backend/migration.mo",
+        "backend/main.mo"
       ]
     },
     {
-      "description": "Broad UI/UX and copy changes unrelated to deletion sync (English translation across pages/components, new theme styling, Sorare branding header/footer, various loading/error UI changes).",
-      "reason": "Non-goal states no UI redesign beyond what is necessary to fix deletion inconsistencies; these changes appear unrelated to deletion persistence/sync.",
+      "description": "Modified frontend hook useActor.ts despite explicit constraint not to edit immutable paths (examples include frontend/src/hooks/useActor.ts).",
+      "reason": "BuildRequest constraints explicitly list frontend/src/hooks/useActor.ts as an example under frontend/immutablePaths that must not be edited; the diff summary reports modifications to that file.",
       "evidence": [
-        "frontend-file-summaries.txt (App.tsx, Header.tsx, Footer.tsx, PortfolioPage.tsx, CardsPage.tsx, index.css)"
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "New/expanded portfolio and transaction UI/features (e.g., SoldCardsModal profit calculation changes; SellOrTradeDialog enhancements; derived transaction groups/counts behavior).",
-      "reason": "BuildRequest non-goals include adding new portfolio features; these appear to extend behavior beyond deletion-sync fixes.",
+      "description": "Introduced Google OAuth2 authentication hook (useGoogleAuth) and related login/session behavior.",
+      "reason": "Not requested (non-goals include adding new third-party services); the diff summary explicitly describes a new/changed Google OAuth implementation.",
       "evidence": [
-        "frontend-file-summaries.txt (SoldCardsModal.tsx, SellOrTradeDialog.tsx, PortfolioPage.tsx notes)"
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Stubs for additional backend-dependent actions (mark as sold / record trade / revert trade) surfaced in frontend hooks.",
-      "reason": "Not requested; BuildRequest focuses only on deletion persistence and sync.",
+      "description": "Translated broad portions of UI text to English across multiple pages/components.",
+      "reason": "Non-goal explicitly says not to translate existing German UI text throughout the app (only history improvements requested); diff summary indicates PortfolioPage/CardsPage and other user-facing text translated to English.",
       "evidence": [
-        "frontend-file-summaries.txt (\"frontend/src/hooks/useQueries.ts\": \"stub implementations for useMarkCardAsSold, useRecordTradeTransaction, and useRevertTradeTransaction...\")"
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Large-scale UI/theme and component changes (global OKLCH theme, multiple page/component rewrites) beyond the History page requirements.",
+      "reason": "BuildRequest scope is change history logging + History page display improvements; the diff summary lists extensive unrelated UI changes across App layout, Header/Footer, modals, dialogs, styling, etc.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.66,
+  "confidence": 0.74,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/queryKeys.ts",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/HistoryPage.tsx",
     "project_state.json"
   ]
 }

@@ -14,6 +14,12 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
+export interface ChangeHistoryEntry {
+    action: ChangeAction;
+    summary: string;
+    timestamp: Time;
+    cardIds: Array<CardId>;
+}
 export interface Card {
     id: CardId;
     age: bigint;
@@ -65,6 +71,15 @@ export interface UserProfile {
     profileImage?: ExternalBlob;
     name: string;
 }
+export enum ChangeAction {
+    updateSalePrice = "updateSalePrice",
+    trade = "trade",
+    addCard = "addCard",
+    markSold = "markSold",
+    deleteCard = "deleteCard",
+    revertTrade = "revertTrade",
+    editCard = "editCard"
+}
 export enum PaymentMethod {
     eth = "eth",
     trade = "trade",
@@ -100,10 +115,14 @@ export interface backendInterface {
     getAllCardsWithUser(user: Principal): Promise<CardWithUser>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getChangeHistory(limit: bigint, offset: bigint): Promise<Array<ChangeHistoryEntry>>;
     getPortfolioSnapshot(): Promise<PortfolioSnapshot>;
     getSoldCardBalance(): Promise<number>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    markCardAsSold(cardId: CardId, salePrice: number, saleDate: Time): Promise<void>;
+    recordTradeTransaction(givenCardIds: Array<CardId>, receivedCardIds: Array<CardId>): Promise<void>;
+    revertTradeTransaction(cardId: CardId, tradeTransaction: TradeTransaction): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateCard(cardId: CardId, name: string, rarity: string, purchasePrice: number, discountPercent: number, paymentMethod: PaymentMethod, country: string, league: string, club: string, age: bigint, version: string, season: string, position: Position, purchaseDate: Time | null, notes: string): Promise<void>;
     updateSalePrice(cardId: CardId, newSalePrice: number): Promise<void>;

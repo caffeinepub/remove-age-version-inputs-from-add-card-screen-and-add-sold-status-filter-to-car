@@ -100,9 +100,10 @@ export default function AddCardDialog({ open, onOpenChange, existingCards = [] }
         league: league.trim(),
         club: club.trim(),
         position: position as Position,
-        age: 0,
+        age: BigInt(0),
         version: '',
         season: season.trim(),
+        image: null,
       });
 
       // Reset form and close dialog only after successful mutation

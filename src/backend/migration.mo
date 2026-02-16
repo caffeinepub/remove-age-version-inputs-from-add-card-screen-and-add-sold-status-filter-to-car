@@ -1,43 +1,51 @@
 import Map "mo:core/Map";
 import List "mo:core/List";
 import Nat "mo:core/Nat";
+import Float "mo:core/Float";
+import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import Storage "blob-storage/Storage";
 
 module {
-  type OldActor = {
-    cards : Map.Map<Principal, List.List<Card>>;
+  type CardId = Nat;
+
+  type ChangeAction = {
+    #addCard;
+    #editCard;
+    #deleteCard;
+    #updateSalePrice;
+    #markSold;
+    #trade;
+    #revertTrade;
   };
 
-  public type CardId = Nat;
-
-  public type PaymentMethod = {
+  type PaymentMethod = {
     #cash;
     #eth;
     #essence;
     #trade;
   };
 
-  public type Position = {
+  type Position = {
     #torwart;
     #verteidiger;
     #mittelfeld;
     #sturm;
   };
 
-  public type TransactionType = {
+  type TransactionType = {
     #forSale;
     #sold;
     #tradedGiven;
     #tradedReceived;
   };
 
-  public type TradeTransaction = {
+  type TradeTransaction = {
     givenCards : [CardId];
     receivedCards : [CardId];
   };
 
-  public type Card = {
+  type Card = {
     id : CardId;
     name : Text;
     rarity : Text;
@@ -55,36 +63,34 @@ module {
     position : Position;
     transactionType : TransactionType;
     tradeReference : ?TradeTransaction;
-    purchaseDate : ?Int;
-    saleDate : ?Int;
+    purchaseDate : ?Time.Time;
+    saleDate : ?Time.Time;
     notes : Text;
     image : ?Storage.ExternalBlob;
   };
 
-  public type InvestmentTotals = {
-    totalCashInvested : Float;
-    totalEthInvested : Float;
+  type UserProfile = {
+    name : Text;
+    profileImage : ?Storage.ExternalBlob;
   };
 
-  public type PortfolioSnapshot = {
-    investmentTotals : InvestmentTotals;
-    totalInvested : Float;
-    totalBalance : Float;
-    totalReturns : Float;
-    totalReturnBalance : Float;
-    portfolioTotal : Float;
-    holdBalance : Float;
-    allCards : [Card];
+  type ChangeHistoryEntry = {
+    timestamp : Time.Time;
+    action : ChangeAction;
+    cardIds : [CardId];
+    summary : Text;
   };
 
-  func transformation(cards : Map.Map<Principal, List.List<Card>>) : Map.Map<Principal, List.List<Card>> {
-    cards;
-  };
-
-  public func run(old : OldActor) : {
+  type OldActor = {
     cards : Map.Map<Principal, List.List<Card>>;
-  } {
-    let transformedCards = transformation(old.cards);
-    { cards = transformedCards };
+    changeHistory : Map.Map<Principal, List.List<ChangeHistoryEntry>>;
+    userProfiles : Map.Map<Principal, UserProfile>;
+    nextCardId : Nat;
+  };
+
+  type NewActor = OldActor;
+
+  public func run(old : OldActor) : NewActor {
+    old;
   };
 };

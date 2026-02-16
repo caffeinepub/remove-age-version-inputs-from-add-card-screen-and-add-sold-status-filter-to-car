@@ -1,47 +1,21 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "React Query cache sync for card deletion between Gallery and Portfolio",
+  "title": "History page: show card names and absolute timestamps in change history feed",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Make Portfolio totals/metrics update immediately after a card is deleted from the gallery by updating/refetching the same React Query data sources.",
-      "acceptanceCriteria": [
-        "After deleting a card from the gallery, Portfolio totals/metrics that depend on cards update without requiring a manual page refresh.",
-        "Deleting a card triggers a reliable refresh/update of any portfolio-related cached data (e.g., the portfolio snapshot query) for the active principal.",
-        "No UI state shows the deleted card in any portfolio-derived lists or counts after deletion succeeds."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/queryKeys.ts",
-          "operation": "create",
-          "description": "Create a centralized, principal-scoped React Query key helper for cards and portfolio snapshot to ensure Gallery and Portfolio always reference the same underlying cache keys."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update the delete-card mutation to (a) optimistically remove the card from both the userCards cache and the portfolioSnapshot cache for the active principal, (b) rollback both caches on failure, and (c) invalidate + refetch the principal-scoped userCards and portfolioSnapshot queries after success/settle so Portfolio updates immediately."
-        }
-      ]
-    },
-    {
       "id": "REQ-3",
-      "summary": "Ensure gallery deletion optimistic updates reconcile with backend results and keep cache key usage consistent (including principal scoping) to prevent divergence between Gallery and Portfolio.",
+      "summary": "Improve History page entries by resolving card IDs to card names when possible and displaying an absolute timestamp alongside the existing relative time, without changing pagination/infinite-load behavior.",
       "acceptanceCriteria": [
-        "When a delete succeeds, the card remains removed from the gallery even after any automatic refetches complete.",
-        "When a delete fails, the gallery rolls back to the previous state and displays an error message (existing toast behavior is acceptable).",
-        "React Query cache keys used for optimistic updates, cancellation, and invalidation are consistent (including principal scoping) so gallery and portfolio cannot diverge."
+        "History list items show card name(s) next to card ID(s) when the card(s) still exist in the user’s collection (fallback to ID-only when not resolvable).",
+        "Each history entry shows an absolute timestamp string in the UI (not only as a hover title), while keeping the existing relative-time display.",
+        "The History page remains paginated/infinite-load as it is now (no regression to loading all entries at once)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/pages/HistoryPage.tsx",
           "operation": "modify",
-          "description": "Fix React Query cancellation/invalidation to use the exact same principal-scoped keys as the queries (e.g., cancelQueries/invalidateQueries/refetchQueries for ['userCards', principal] and ['portfolioSnapshot', principal]) and store per-key snapshots in onMutate so rollback is reliable and cannot be overwritten by mismatched cache operations."
-        },
-        {
-          "path": "frontend/src/hooks/queryKeys.ts",
-          "operation": "modify",
-          "description": "Ensure the query key helper covers all keys touched by delete flows (at minimum userCards and portfolioSnapshot) so optimistic updates, cancellation, invalidation, and refetch all use identical key construction."
+          "description": "Enhance history list rendering to (1) fetch the user’s current cards (via existing query hook) and build a lookup map from cardId -> card name for resolving entry.cardIds to display \"<id> (<name>)\" when available, and (2) render an explicit absolute timestamp string (using existing formatTimestamp) in the visible UI alongside the existing relative time display; keep the existing useGetChangeHistory infinite pagination and 'Load more' behavior unchanged."
         }
       ]
     }

@@ -89,6 +89,12 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface ChangeHistoryEntry {
+    action: ChangeAction;
+    summary: string;
+    timestamp: Time;
+    cardIds: Array<CardId>;
+}
 export interface Card {
     id: CardId;
     age: bigint;
@@ -151,6 +157,15 @@ export interface _CaffeineStorageRefillResult {
     success?: boolean;
     topped_up_amount?: bigint;
 }
+export enum ChangeAction {
+    updateSalePrice = "updateSalePrice",
+    trade = "trade",
+    addCard = "addCard",
+    markSold = "markSold",
+    deleteCard = "deleteCard",
+    revertTrade = "revertTrade",
+    editCard = "editCard"
+}
 export enum PaymentMethod {
     eth = "eth",
     trade = "trade",
@@ -193,15 +208,19 @@ export interface backendInterface {
     getAllCardsWithUser(user: Principal): Promise<CardWithUser>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getChangeHistory(limit: bigint, offset: bigint): Promise<Array<ChangeHistoryEntry>>;
     getPortfolioSnapshot(): Promise<PortfolioSnapshot>;
     getSoldCardBalance(): Promise<number>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    markCardAsSold(cardId: CardId, salePrice: number, saleDate: Time): Promise<void>;
+    recordTradeTransaction(givenCardIds: Array<CardId>, receivedCardIds: Array<CardId>): Promise<void>;
+    revertTradeTransaction(cardId: CardId, tradeTransaction: TradeTransaction): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateCard(cardId: CardId, name: string, rarity: string, purchasePrice: number, discountPercent: number, paymentMethod: PaymentMethod, country: string, league: string, club: string, age: bigint, version: string, season: string, position: Position, purchaseDate: Time | null, notes: string): Promise<void>;
     updateSalePrice(cardId: CardId, newSalePrice: number): Promise<void>;
 }
-import type { Card as _Card, CardId as _CardId, CardWithUser as _CardWithUser, ExternalBlob as _ExternalBlob, InvestmentTotals as _InvestmentTotals, PaymentMethod as _PaymentMethod, PortfolioSnapshot as _PortfolioSnapshot, Position as _Position, Time as _Time, TradeTransaction as _TradeTransaction, TransactionType as _TransactionType, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { Card as _Card, CardId as _CardId, CardWithUser as _CardWithUser, ChangeAction as _ChangeAction, ChangeHistoryEntry as _ChangeHistoryEntry, ExternalBlob as _ExternalBlob, InvestmentTotals as _InvestmentTotals, PaymentMethod as _PaymentMethod, PortfolioSnapshot as _PortfolioSnapshot, Position as _Position, Time as _Time, TradeTransaction as _TradeTransaction, TransactionType as _TransactionType, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -456,18 +475,32 @@ export class Backend implements backendInterface {
             return from_candid_UserRole_n36(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getChangeHistory(arg0: bigint, arg1: bigint): Promise<Array<ChangeHistoryEntry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getChangeHistory(arg0, arg1);
+                return from_candid_vec_n38(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getChangeHistory(arg0, arg1);
+            return from_candid_vec_n38(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
         if (this.processError) {
             try {
                 const result = await this.actor.getPortfolioSnapshot();
-                return from_candid_PortfolioSnapshot_n38(this._uploadFile, this._downloadFile, result);
+                return from_candid_PortfolioSnapshot_n43(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getPortfolioSnapshot();
-            return from_candid_PortfolioSnapshot_n38(this._uploadFile, this._downloadFile, result);
+            return from_candid_PortfolioSnapshot_n43(this._uploadFile, this._downloadFile, result);
         }
     }
     async getSoldCardBalance(): Promise<number> {
@@ -512,17 +545,59 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+    async markCardAsSold(arg0: CardId, arg1: number, arg2: Time): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n40(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.markCardAsSold(arg0, arg1, arg2);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n40(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.markCardAsSold(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async recordTradeTransaction(arg0: Array<CardId>, arg1: Array<CardId>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.recordTradeTransaction(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.recordTradeTransaction(arg0, arg1);
+            return result;
+        }
+    }
+    async revertTradeTransaction(arg0: CardId, arg1: TradeTransaction): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.revertTradeTransaction(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.revertTradeTransaction(arg0, arg1);
+            return result;
+        }
+    }
+    async saveCallerUserProfile(arg0: UserProfile): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n45(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.saveCallerUserProfile(await to_candid_UserProfile_n45(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -561,14 +636,20 @@ async function from_candid_CardWithUser_n31(_uploadFile: (file: ExternalBlob) =>
 async function from_candid_Card_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Card): Promise<Card> {
     return await from_candid_record_n19(_uploadFile, _downloadFile, value);
 }
+function from_candid_ChangeAction_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ChangeAction): ChangeAction {
+    return from_candid_variant_n42(_uploadFile, _downloadFile, value);
+}
+function from_candid_ChangeHistoryEntry_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ChangeHistoryEntry): ChangeHistoryEntry {
+    return from_candid_record_n40(_uploadFile, _downloadFile, value);
+}
 async function from_candid_ExternalBlob_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
 function from_candid_PaymentMethod_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PaymentMethod): PaymentMethod {
     return from_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
-async function from_candid_PortfolioSnapshot_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PortfolioSnapshot): Promise<PortfolioSnapshot> {
-    return await from_candid_record_n39(_uploadFile, _downloadFile, value);
+async function from_candid_PortfolioSnapshot_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _PortfolioSnapshot): Promise<PortfolioSnapshot> {
+    return await from_candid_record_n44(_uploadFile, _downloadFile, value);
 }
 function from_candid_Position_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Position): Position {
     return from_candid_variant_n30(_uploadFile, _downloadFile, value);
@@ -699,7 +780,25 @@ async function from_candid_record_n35(_uploadFile: (file: ExternalBlob) => Promi
         name: value.name
     };
 }
-async function from_candid_record_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    action: _ChangeAction;
+    summary: string;
+    timestamp: _Time;
+    cardIds: Array<_CardId>;
+}): {
+    action: ChangeAction;
+    summary: string;
+    timestamp: Time;
+    cardIds: Array<CardId>;
+} {
+    return {
+        action: from_candid_ChangeAction_n41(_uploadFile, _downloadFile, value.action),
+        summary: value.summary,
+        timestamp: value.timestamp,
+        cardIds: value.cardIds
+    };
+}
+async function from_candid_record_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     holdBalance: number;
     totalInvested: number;
     investmentTotals: _InvestmentTotals;
@@ -783,8 +882,28 @@ function from_candid_variant_n37(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
+function from_candid_variant_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    updateSalePrice: null;
+} | {
+    trade: null;
+} | {
+    addCard: null;
+} | {
+    markSold: null;
+} | {
+    deleteCard: null;
+} | {
+    revertTrade: null;
+} | {
+    editCard: null;
+}): ChangeAction {
+    return "updateSalePrice" in value ? ChangeAction.updateSalePrice : "trade" in value ? ChangeAction.trade : "addCard" in value ? ChangeAction.addCard : "markSold" in value ? ChangeAction.markSold : "deleteCard" in value ? ChangeAction.deleteCard : "revertTrade" in value ? ChangeAction.revertTrade : "editCard" in value ? ChangeAction.editCard : value;
+}
 async function from_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Card>): Promise<Array<Card>> {
     return await Promise.all(value.map(async (x)=>await from_candid_Card_n18(_uploadFile, _downloadFile, x)));
+}
+function from_candid_vec_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ChangeHistoryEntry>): Array<ChangeHistoryEntry> {
+    return value.map((x)=>from_candid_ChangeHistoryEntry_n39(_uploadFile, _downloadFile, x));
 }
 async function to_candid_ExternalBlob_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
@@ -795,8 +914,8 @@ function to_candid_PaymentMethod_n8(_uploadFile: (file: ExternalBlob) => Promise
 function to_candid_Position_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Position): _Position {
     return to_candid_variant_n11(_uploadFile, _downloadFile, value);
 }
-async function to_candid_UserProfile_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
-    return await to_candid_record_n41(_uploadFile, _downloadFile, value);
+async function to_candid_UserProfile_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserProfile): Promise<_UserProfile> {
+    return await to_candid_record_n46(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n16(_uploadFile, _downloadFile, value);
@@ -822,7 +941,7 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-async function to_candid_record_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     profileImage?: ExternalBlob;
     name: string;
 }): Promise<{

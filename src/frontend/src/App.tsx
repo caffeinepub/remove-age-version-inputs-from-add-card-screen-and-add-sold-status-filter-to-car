@@ -7,6 +7,7 @@ import Footer from './components/Footer';
 import ProfileSetupModal from './components/ProfileSetupModal';
 import PortfolioPage from './pages/PortfolioPage';
 import CardsPage from './pages/CardsPage';
+import HistoryPage from './pages/HistoryPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -330,9 +331,10 @@ export default function App() {
             // Successfully loaded - show main content
             <ErrorBoundary>
               <Tabs defaultValue="portfolio" className="w-full">
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+                <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8">
                   <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
                   <TabsTrigger value="cards">Karten</TabsTrigger>
+                  <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="portfolio">
@@ -344,6 +346,12 @@ export default function App() {
                 <TabsContent value="cards">
                   <ErrorBoundary>
                     <CardsPage />
+                  </ErrorBoundary>
+                </TabsContent>
+
+                <TabsContent value="history">
+                  <ErrorBoundary>
+                    <HistoryPage />
                   </ErrorBoundary>
                 </TabsContent>
               </Tabs>

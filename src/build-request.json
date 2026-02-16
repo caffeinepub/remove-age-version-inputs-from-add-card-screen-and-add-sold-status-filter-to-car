@@ -1,72 +1,72 @@
 {
   "kind": "build_request",
-  "title": "Fix card deletion persistence and sync between Gallery and Portfolio",
+  "title": "Expand change history to fully track edits to existing cards",
   "projectName": "Sorare Portfolio",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix card deletion so that deleting a card is persisted in the backend and the deleted card does not reappear in the card gallery after a full page refresh.",
+      "text": "Enhance backend change-history logging so edits to existing cards are fully traceable: when a card is edited or updated, the stored history entry summary must include which fields changed and the before/after values (for example: “Edited card #12 (Mbappé): purchasePrice 10.0 → 12.5, club PSG → Real Madrid”).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "Wenn man eine Karte löscht verschwindet sie aus der Kartengalerie aber im Portfolio verändert sich nichts. Bei Aktualisierung der Seite kommt die Karte wieder in die kartengalerie."
+          "Ja bitte genauso"
         ]
       },
       "acceptanceCriteria": [
-        "After calling the backend delete operation for a card ID, subsequent calls to `getAllCardsForUser()` do not include that card.",
-        "After a full browser refresh, the deleted card is still absent from the gallery because backend state no longer returns it.",
-        "If a user attempts to delete a card ID that does not exist for them, the backend returns a clear error (no silent no-op)."
+        "Updating a card via the existing updateCard flow produces a change history entry with action #editCard whose summary lists each changed field with old and new values.",
+        "If no effective field values changed (user submits identical data), the history entry either is not created or clearly indicates 'No changes' (choose one behavior and keep it consistent).",
+        "Existing ChangeHistoryEntry shape remains compatible with the current frontend usage (timestamp/action/cardIds/summary)."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
-      "target": "frontend",
+      "text": "Enhance backend change-history summaries for other existing card modifications so they are self-explanatory and include before/after context where applicable (e.g., sale price changes should record oldSalePrice → newSalePrice; deleting a card should include the last known card name if available; marking as sold should include sale price and sale date/time).",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "...aber im Portfolio verändert sich nichts... bitte behebe diese Fehler im Portfolio und Galerie."
+          "Ist es möglich auch die Änderungen der bereits bestehenden Karten in der Historie anzuzeigen?"
         ]
       },
       "acceptanceCriteria": [
-        "After deleting a card from the gallery, Portfolio totals/metrics that depend on cards update without requiring a manual page refresh.",
-        "Deleting a card triggers a reliable refresh/update of any portfolio-related cached data (e.g., the portfolio snapshot query) for the active principal.",
-        "No UI state shows the deleted card in any portfolio-derived lists or counts after deletion succeeds."
+        "updateSalePrice history entries include both the previous and new sale price in the summary when a previous price existed.",
+        "deleteCard history entries include the deleted card’s name in the summary when it can be determined at deletion time.",
+        "markCardAsSold history entries include the sale price and a human-readable sale date/time in the summary (in addition to the entry timestamp)."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
+      "text": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-7"
         ],
         "quotes": [
-          "Bei Aktualisierung der Seite kommt die Karte wieder in die kartengalerie. Das soll nicht so sein..."
+          "Ja bitte genauso"
         ]
       },
       "acceptanceCriteria": [
-        "When a delete succeeds, the card remains removed from the gallery even after any automatic refetches complete.",
-        "When a delete fails, the gallery rolls back to the previous state and displays an error message (existing toast behavior is acceptable).",
-        "React Query cache keys used for optimistic updates, cancellation, and invalidation are consistent (including principal scoping) so gallery and portfolio cannot diverge."
+        "History list items show card name(s) next to card ID(s) when the card(s) still exist in the user’s collection (fallback to ID-only when not resolvable).",
+        "Each history entry shows an absolute timestamp string in the UI (not only as a hover title), while keeping the existing relative-time display.",
+        "The History page remains paginated/infinite-load as it is now (no regression to loading all entries at once)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under `frontend/src/components/ui` or any other paths listed as immutable in SYSTEM_CONTEXT.",
-    "Backend must remain a single-actor Motoko canister; do not introduce additional backend services."
+    "Do not edit files under frontend/immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Keep all Motoko backend logic inside the single actor in backend/main.mo; only add migration code if a state upgrade is strictly required."
   ],
   "nonGoals": [
-    "Adding new portfolio features or new card fields.",
-    "Changing authentication (Internet Identity) behavior.",
-    "UI redesign beyond what is necessary to fix deletion-related inconsistencies."
+    "Adding new third-party services or external databases.",
+    "Real-time updates (WebSockets) for the history feed.",
+    "Translating existing German UI text throughout the app (only the history improvements requested here)."
   ],
   "imageRequirements": {
     "required": [],

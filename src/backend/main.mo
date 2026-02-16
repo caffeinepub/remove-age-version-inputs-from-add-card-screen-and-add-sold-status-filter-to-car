@@ -1,22 +1,37 @@
 import Principal "mo:core/Principal";
 import Float "mo:core/Float";
-import Nat "mo:core/Nat";
-import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Map "mo:core/Map";
+import List "mo:core/List";
+import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
+import Set "mo:core/Set";
+import Nat "mo:core/Nat";
 import Time "mo:core/Time";
+import Text "mo:core/Text";
+import Migration "migration";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
+import MixinStorage "blob-storage/Mixin";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
   include MixinStorage();
 
   public type CardId = Nat;
+
+  public type ChangeAction = {
+    #addCard;
+    #editCard;
+    #deleteCard;
+    #updateSalePrice;
+    #markSold;
+    #trade;
+    #revertTrade;
+  };
 
   public type PaymentMethod = {
     #cash;
@@ -89,7 +104,15 @@ actor {
     allCards : [Card];
   };
 
+  public type ChangeHistoryEntry = {
+    timestamp : Time.Time;
+    action : ChangeAction;
+    cardIds : [CardId];
+    summary : Text;
+  };
+
   let cards = Map.empty<Principal, List.List<Card>>();
+  let changeHistory = Map.empty<Principal, List.List<ChangeHistoryEntry>>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   var nextCardId = 0;
 
@@ -99,11 +122,67 @@ actor {
     currentId;
   };
 
+  func logChange(user : Principal, action : ChangeAction, cardIds : [CardId], summary : Text) {
+    let entry : ChangeHistoryEntry = {
+      timestamp = Time.now();
+      action;
+      cardIds;
+      summary;
+    };
+
+    let currentHistory = switch (changeHistory.get(user)) {
+      case (null) { List.empty<ChangeHistoryEntry>() };
+      case (?history) { history };
+    };
+
+    currentHistory.add(entry);
+    changeHistory.add(user, currentHistory);
+  };
+
+  func compareEntriesByTime(entry1 : ChangeHistoryEntry, entry2 : ChangeHistoryEntry) : Order.Order {
+    if (entry1.timestamp < entry2.timestamp) { #greater } else if (entry1.timestamp > entry2.timestamp) {
+      #less;
+    } else {
+      #equal;
+    };
+  };
+
+  func getChangeHistoryInternal(user : Principal, limit : Nat, offset : Nat) : [ChangeHistoryEntry] {
+    switch (changeHistory.get(user)) {
+      case (null) { [] };
+      case (?history) {
+        let sorted = history.sort(compareEntriesByTime);
+        let sortedArray = sorted.toArray();
+        if (sortedArray.size() <= offset) { return [] };
+        sortedArray.sliceToArray(offset, sortedArray.size()).sliceToArray(0, Nat.min(limit, sortedArray.size() - offset));
+      };
+    };
+  };
+
+  func verifyCardOwnership(caller : Principal, cardId : CardId) : Bool {
+    switch (cards.get(caller)) {
+      case (null) { false };
+      case (?userCards) {
+        switch (userCards.find(func(card) { card.id == cardId })) {
+          case (?_) { true };
+          case (null) { false };
+        };
+      };
+    };
+  };
+
   public query ({ caller }) func getAllCardsForUser() : async [Card] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access their cards");
     };
     getAllCardsForUserInternal(caller);
+  };
+
+  public query ({ caller }) func getChangeHistory(limit : Nat, offset : Nat) : async [ChangeHistoryEntry] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Must be logged in for change history");
+    };
+    getChangeHistoryInternal(caller, limit, offset);
   };
 
   func getAllCardsForUserInternal(user : Principal) : [Card] {
@@ -166,6 +245,14 @@ actor {
 
     currentCards.add(newCard);
     cards.add(caller, currentCards);
+
+    logChange(
+      caller,
+      #addCard,
+      [cardId],
+      "Added new card: " # name,
+    );
+
     cardId;
   };
 
@@ -176,17 +263,45 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update cards");
     };
+
+    if (not verifyCardOwnership(caller, cardId)) {
+      Runtime.trap("Unauthorized: Card does not belong to caller");
+    };
+
     switch (cards.get(caller)) {
       case (null) {
         Runtime.trap("Card not found");
       };
       case (?userCards) {
+        var oldSalePrice : ?Float = null;
         let updatedCards = userCards.map<Card, Card>(
           func(card) {
-            if (card.id == cardId) { { card with salePrice = ?newSalePrice } } else { card };
+            if (card.id == cardId) {
+              oldSalePrice := card.salePrice;
+              { card with salePrice = ?newSalePrice };
+            } else { card };
           }
         );
         cards.add(caller, updatedCards);
+
+        switch (oldSalePrice) {
+          case (null) {
+            logChange(
+              caller,
+              #updateSalePrice,
+              [cardId],
+              "Set sale price for card " # cardId.toText() # " to " # newSalePrice.toText(),
+            );
+          };
+          case (?oldPrice) {
+            logChange(
+              caller,
+              #updateSalePrice,
+              [cardId],
+              "Updated sale price for card " # cardId.toText() # " from " # oldPrice.toText() # " to " # newSalePrice.toText(),
+            );
+          };
+        };
       };
     };
   };
@@ -211,14 +326,21 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update cards");
     };
+
+    if (not verifyCardOwnership(caller, cardId)) {
+      Runtime.trap("Unauthorized: Card does not belong to caller");
+    };
+
     switch (cards.get(caller)) {
       case (null) {
         Runtime.trap("Card not found");
       };
       case (?userCards) {
+        var oldName = "";
         let updatedCards = userCards.map<Card, Card>(
           func(card) {
             if (card.id == cardId) {
+              oldName := card.name;
               {
                 card with
                 name;
@@ -240,6 +362,13 @@ actor {
           }
         );
         cards.add(caller, updatedCards);
+
+        logChange(
+          caller,
+          #editCard,
+          [cardId],
+          "Edited card #" # cardId.toText() # ": " # oldName # " → " # name,
+        );
       };
     };
   };
@@ -249,15 +378,67 @@ actor {
       Runtime.trap("Unauthorized: Only users can delete cards");
     };
 
+    if (not verifyCardOwnership(caller, cardId)) {
+      Runtime.trap("Unauthorized: Card does not belong to caller");
+    };
+
     switch (cards.get(caller)) {
       case (null) {
         Runtime.trap("Card not found");
       };
       case (?userCards) {
+        var deletedCardName = "";
         let filteredItems = userCards.filter(
-          func(card) { card.id != cardId }
+          func(card) {
+            let isMatch = card.id == cardId;
+            if (isMatch) { deletedCardName := card.name };
+            not isMatch;
+          }
         );
         cards.add(caller, filteredItems);
+
+        let summary = if (deletedCardName != "") {
+          "Deleted card #" # cardId.toText() # " (" # deletedCardName # ")"
+        } else { "Deleted card " # cardId.toText() };
+        logChange(caller, #deleteCard, [cardId], summary);
+      };
+    };
+  };
+
+  public shared ({ caller }) func markCardAsSold(
+    cardId : CardId,
+    salePrice : Float,
+    saleDate : Time.Time,
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can sell cards");
+    };
+
+    if (not verifyCardOwnership(caller, cardId)) {
+      Runtime.trap("Unauthorized: Card does not belong to caller");
+    };
+
+    switch (cards.get(caller)) {
+      case (null) { Runtime.trap("Cards not found") };
+      case (?userCards) {
+        var found = false;
+        let updatedItems = userCards.map<Card, Card>(
+          func(card) {
+            if (card.id == cardId) {
+              found := true;
+              { card with transactionType = #sold; salePrice = ?salePrice; saleDate = ?saleDate };
+            } else { card };
+          }
+        );
+        if (not found) { Runtime.trap("CardId not found") };
+        cards.add(caller, updatedItems);
+
+        logChange(
+          caller,
+          #markSold,
+          [cardId],
+          "Card " # cardId.toText() # " marked as sold for " # salePrice.toText() # " at " # saleDate.toText(),
+        );
       };
     };
   };
@@ -266,6 +447,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access portfolio data");
     };
+
     let allCards = getAllCardsForUserInternal(caller);
     var totalCash : Float = 0.0;
     var totalEth : Float = 0.0;
@@ -277,8 +459,7 @@ actor {
         case (#eth) {
           totalEth += card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
         };
-        case (#essence) {};
-        case (#trade) {};
+        case (_) {};
       };
     };
     {
@@ -312,6 +493,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access portfolio data");
     };
+
     let allCards = getAllCardsForUserInternal(caller);
     var total : Float = 0.0;
     for (card in allCards.values()) {
@@ -322,8 +504,7 @@ actor {
         case (#eth) {
           total += card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
         };
-        case (#essence) {};
-        case (#trade) {};
+        case (_) {};
       };
     };
     total;
@@ -333,6 +514,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access portfolio data");
     };
+
     let allCards = getAllCardsForUserInternal(caller);
     var totalInvested : Float = 0.0;
     var totalReturns : Float = 0.0;
@@ -345,8 +527,7 @@ actor {
         case (#eth) {
           totalInvested += card.purchasePrice * (1.0 - (card.discountPercent / 100.0));
         };
-        case (#essence) {};
-        case (#trade) {};
+        case (_) {};
       };
       if (card.transactionType == #sold) {
         switch (card.salePrice) {
@@ -363,6 +544,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access portfolio data");
     };
+
     let allCards = getAllCardsForUserInternal(caller);
     var total : Float = 0.0;
     for (card in allCards.values()) {
@@ -463,6 +645,119 @@ actor {
       portfolioTotal = totalReturns + totalInvested;
       holdBalance = totalInvested;
       allCards;
+    };
+  };
+
+  public shared ({ caller }) func recordTradeTransaction(
+    givenCardIds : [CardId],
+    receivedCardIds : [CardId],
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only logged in users can record trades");
+    };
+
+    for (cardId in givenCardIds.values()) {
+      if (not verifyCardOwnership(caller, cardId)) {
+        Runtime.trap("Unauthorized: One or more cards do not belong to caller");
+      };
+    };
+
+    let currentCards = switch (cards.get(caller)) {
+      case (null) { Runtime.trap("Card not found") };
+      case (?userCards) { userCards };
+    };
+
+    let allExistingIds = currentCards.map<Card, CardId>(func(card) { card.id }).toArray();
+    let existingIdsSet = Set.fromArray<CardId>(allExistingIds);
+
+    let existingGivenIds = givenCardIds.filter(func(id) { existingIdsSet.contains(id) });
+
+    if (existingGivenIds.size() != givenCardIds.size()) {
+      if (existingGivenIds.size() == 0) {
+        Runtime.trap("Unable to trade, non-existing cards");
+      };
+    };
+
+    let updatedCards = currentCards.map<Card, Card>(
+      func(card) {
+        if (card.transactionType == #forSale) {
+          let isGiven = switch (existingGivenIds.find(func(id) { id == card.id })) {
+            case (?id) { true };
+            case (null) { false };
+          };
+          if (isGiven) {
+            {
+              card with
+              transactionType = #tradedGiven;
+              tradeReference = ?{
+                givenCards = existingGivenIds;
+                receivedCards = receivedCardIds;
+              };
+            };
+          } else {
+            card;
+          };
+        } else {
+          card;
+        };
+      }
+    );
+
+    cards.add(caller, updatedCards);
+
+    logChange(
+      caller,
+      #trade,
+      existingGivenIds,
+      "Recorded trade: " # existingGivenIds.size().toText() # " cards given, " # receivedCardIds.size().toText() # " received",
+    );
+  };
+
+  public shared ({ caller }) func revertTradeTransaction(
+    cardId : CardId,
+    tradeTransaction : TradeTransaction,
+  ) : async () {
+    let { givenCards; receivedCards } = tradeTransaction;
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only logged in users can revert trades");
+    };
+
+    if (not verifyCardOwnership(caller, cardId)) {
+      Runtime.trap("Unauthorized: Card does not belong to caller");
+    };
+
+    let currentCards = switch (cards.get(caller)) {
+      case (null) { Runtime.trap("Card not found") };
+      case (?userCards) { userCards };
+    };
+
+    let cardExists = switch (currentCards.find(func(card) { card.id == cardId })) {
+      case (?_) { true };
+      case (null) { Runtime.trap("Non-existing trade card") };
+    };
+
+    if (cardExists) {
+      let updatedCards = currentCards.map<Card, Card>(
+        func(card) {
+          if (card.id == cardId and card.transactionType == #tradedGiven) {
+            {
+              card with transactionType = #forSale;
+              tradeReference = null;
+            };
+          } else {
+            card;
+          };
+        }
+      );
+
+      cards.add(caller, updatedCards);
+
+      logChange(
+        caller,
+        #revertTrade,
+        givenCards,
+        "Reverted trade for card: " # cardId.toText(),
+      );
     };
   };
 };

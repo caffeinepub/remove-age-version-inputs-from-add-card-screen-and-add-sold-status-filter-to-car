@@ -91,9 +91,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
 
     const discount = discountPercent.trim() === '' ? 0 : parseFloat(discountPercent);
     const purchaseDateValue = purchaseDate.trim() === '' ? null : BigInt(new Date(purchaseDate).getTime() * 1000000);
-    
-    // Parse sale price if provided
-    const salePriceValue = salePrice.trim() !== '' ? parseFloat(salePrice) : null;
 
     try {
       await updateCard({
@@ -109,10 +106,9 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
         league: league.trim(),
         club: club.trim(),
         position,
-        age: Number(card.age),
+        age: BigInt(card.age),
         version: card.version,
         season: season.trim(),
-        salePrice: salePriceValue,
       });
 
       onOpenChange(false);
@@ -227,28 +223,6 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
             />
           </div>
 
-          {/* Sale Price Field - Only show if card has a sale price */}
-          {hasSalePrice && (
-            <div className="space-y-1.5 p-3 border rounded-lg bg-blue-500/5 border-blue-500/20">
-              <Label htmlFor="edit-salePrice" className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                Verkaufspreis (€) {isSold && '*'}
-              </Label>
-              <Input
-                id="edit-salePrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={salePrice}
-                onChange={(e) => setSalePrice(e.target.value)}
-                placeholder="0.00"
-                className="h-9"
-              />
-              <p className="text-xs text-muted-foreground">
-                Dieser Wert kann bearbeitet werden, da die Karte einen Verkaufspreis hat.
-              </p>
-            </div>
-          )}
-
           <div className="space-y-1.5">
             <Label htmlFor="edit-notes" className="text-sm">Notizen</Label>
             <Textarea
@@ -323,6 +297,28 @@ export default function EditCardDialog({ open, onOpenChange, card }: EditCardDia
               className="h-9"
             />
           </div>
+
+          {hasSalePrice && (
+            <div className="space-y-1.5 p-3 border rounded-lg bg-muted/30">
+              <Label htmlFor="edit-salePrice" className="text-sm">Verkaufspreis (€)</Label>
+              <Input
+                id="edit-salePrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+                placeholder="0.00"
+                className="h-9"
+                disabled={isSold}
+              />
+              {isSold && (
+                <p className="text-xs text-muted-foreground">
+                  Diese Karte wurde bereits verkauft. Der Verkaufspreis kann nicht mehr geändert werden.
+                </p>
+              )}
+            </div>
+          )}
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending} className="h-9">

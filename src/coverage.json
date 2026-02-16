@@ -1,62 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-16T23:29:13.915Z",
+  "generatedAt": "2026-02-16T23:55:30.624Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 3,
-    "implemented": 2,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix card deletion so that deleting a card is persisted in the backend and the deleted card does not reappear in the card gallery after a full page refresh.",
+        "summary": "Enhance backend change-history logging so edits to existing cards are fully traceable: when a card is edited or updated, the stored history entry summary must include which fields changed and the before/after values (for example: “Edited card #12 (Mbappé): purchasePrice 10.0 → 12.5, club PSG → Real Madrid”).",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Ensure the Portfolio UI updates immediately after a card is deleted from the gallery, using the same underlying data source as the gallery (React Query) and/or ensuring the portfolio snapshot query is reliably refetched/updated after deletion.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/queryKeys.ts",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/queryKeys.ts",
-          "frontend/src/hooks/useQueries.ts"
-        ]
+        "summary": "Enhance backend change-history summaries for other existing card modifications so they are self-explanatory and include before/after context where applicable (e.g., sale price changes should record oldSalePrice → newSalePrice; deleting a card should include the last known card name if available; marking as sold should include sale price and sale date/time).",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Fix gallery state synchronization so that the gallery reflects the backend as the source of truth after deletion, including correctly handling optimistic updates and ensuring the UI reconciles with the backend result.",
+        "summary": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/hooks/queryKeys.ts"
+          "frontend/src/pages/HistoryPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/hooks/queryKeys.ts"
+          "frontend/src/pages/HistoryPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/queryKeys.ts",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/HistoryPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

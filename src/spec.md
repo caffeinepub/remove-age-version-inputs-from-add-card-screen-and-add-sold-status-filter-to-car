@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Ensure card deletion is persisted in the backend and remains consistently reflected across Gallery and Portfolio (including after refresh).
+**Goal:** Make change history fully traceable and easier to read by recording before/after field changes for card edits and showing clearer history details (names + absolute timestamps) in the History UI.
 
 **Planned changes:**
-- Backend: Fix the card delete operation so deletions are stored and removed cards are no longer returned by `getAllCardsForUser()`; return a clear error when attempting to delete a non-existent card for the user.
-- Frontend: Update React Query delete flow to keep Gallery in sync with backend as the source of truth (consistent cache keys, optimistic update + rollback on failure, and correct invalidation/refetch after delete).
-- Frontend: Ensure Portfolio views/metrics update immediately after a Gallery deletion by reliably refetching/updating any portfolio-related cached queries for the active principal.
+- Backend: Enhance `updateCard` history logging so edit entries include each changed field with before/after values; if no effective changes occurred, consistently either skip creating an entry or record “No changes”.
+- Backend: Improve history summaries for other card modifications to include relevant before/after context (sale price updates, delete card including last known name when available, mark as sold including sale price and a human-readable sale date/time).
+- Frontend: Update the History page to display card names next to IDs when resolvable and show an explicit absolute date/time for each entry while keeping the existing relative-time display and current pagination/infinite-load behavior.
 
-**User-visible outcome:** When a user deletes a card, it disappears from both Gallery and Portfolio-derived totals/lists immediately, stays deleted after a full page refresh, and shows an error if the deletion fails.
+**User-visible outcome:** The History page shows more informative entries for card changes (including card names and absolute timestamps), and card edit-related history clearly lists what fields changed with old/new values.

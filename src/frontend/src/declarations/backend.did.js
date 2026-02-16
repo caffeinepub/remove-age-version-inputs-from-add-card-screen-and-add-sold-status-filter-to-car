@@ -84,6 +84,21 @@ export const UserProfile = IDL.Record({
   'profileImage' : IDL.Opt(ExternalBlob),
   'name' : IDL.Text,
 });
+export const ChangeAction = IDL.Variant({
+  'updateSalePrice' : IDL.Null,
+  'trade' : IDL.Null,
+  'addCard' : IDL.Null,
+  'markSold' : IDL.Null,
+  'deleteCard' : IDL.Null,
+  'revertTrade' : IDL.Null,
+  'editCard' : IDL.Null,
+});
+export const ChangeHistoryEntry = IDL.Record({
+  'action' : ChangeAction,
+  'summary' : IDL.Text,
+  'timestamp' : Time,
+  'cardIds' : IDL.Vec(CardId),
+});
 export const PortfolioSnapshot = IDL.Record({
   'holdBalance' : IDL.Float64,
   'totalInvested' : IDL.Float64,
@@ -154,6 +169,11 @@ export const idlService = IDL.Service({
   'getAllCardsWithUser' : IDL.Func([IDL.Principal], [CardWithUser], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getChangeHistory' : IDL.Func(
+      [IDL.Nat, IDL.Nat],
+      [IDL.Vec(ChangeHistoryEntry)],
+      ['query'],
+    ),
   'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
   'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
   'getUserProfile' : IDL.Func(
@@ -162,6 +182,13 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'markCardAsSold' : IDL.Func([CardId, IDL.Float64, Time], [], []),
+  'recordTradeTransaction' : IDL.Func(
+      [IDL.Vec(CardId), IDL.Vec(CardId)],
+      [],
+      [],
+    ),
+  'revertTradeTransaction' : IDL.Func([CardId, TradeTransaction], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateCard' : IDL.Func(
       [
@@ -266,6 +293,21 @@ export const idlFactory = ({ IDL }) => {
     'profileImage' : IDL.Opt(ExternalBlob),
     'name' : IDL.Text,
   });
+  const ChangeAction = IDL.Variant({
+    'updateSalePrice' : IDL.Null,
+    'trade' : IDL.Null,
+    'addCard' : IDL.Null,
+    'markSold' : IDL.Null,
+    'deleteCard' : IDL.Null,
+    'revertTrade' : IDL.Null,
+    'editCard' : IDL.Null,
+  });
+  const ChangeHistoryEntry = IDL.Record({
+    'action' : ChangeAction,
+    'summary' : IDL.Text,
+    'timestamp' : Time,
+    'cardIds' : IDL.Vec(CardId),
+  });
   const PortfolioSnapshot = IDL.Record({
     'holdBalance' : IDL.Float64,
     'totalInvested' : IDL.Float64,
@@ -340,6 +382,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getChangeHistory' : IDL.Func(
+        [IDL.Nat, IDL.Nat],
+        [IDL.Vec(ChangeHistoryEntry)],
+        ['query'],
+      ),
     'getPortfolioSnapshot' : IDL.Func([], [PortfolioSnapshot], ['query']),
     'getSoldCardBalance' : IDL.Func([], [IDL.Float64], ['query']),
     'getUserProfile' : IDL.Func(
@@ -348,6 +395,13 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'markCardAsSold' : IDL.Func([CardId, IDL.Float64, Time], [], []),
+    'recordTradeTransaction' : IDL.Func(
+        [IDL.Vec(CardId), IDL.Vec(CardId)],
+        [],
+        [],
+      ),
+    'revertTradeTransaction' : IDL.Func([CardId, TradeTransaction], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateCard' : IDL.Func(
         [
