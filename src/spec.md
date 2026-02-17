@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Make change history fully traceable and easier to read by recording before/after field changes for card edits and showing clearer history details (names + absolute timestamps) in the History UI.
+**Goal:** Ensure the History page shows add and sell events for all cards, including cards added/sold before the history feature existed, without creating duplicate history entries.
 
 **Planned changes:**
-- Backend: Enhance `updateCard` history logging so edit entries include each changed field with before/after values; if no effective changes occurred, consistently either skip creating an entry or record “No changes”.
-- Backend: Improve history summaries for other card modifications to include relevant before/after context (sale price updates, delete card including last known name when available, mark as sold including sale price and a human-readable sale date/time).
-- Frontend: Update the History page to display card names next to IDs when resolvable and show an explicit absolute date/time for each entry while keeping the existing relative-time display and current pagination/infinite-load behavior.
+- Implement a persisted backfill on the backend so each existing card has at least one “added” history entry, and any card already in a sold state also has a corresponding “sold” entry.
+- Ensure backfilled and newly-created history entries include a clear English summary identifying the card (card name + card id) and are ordered correctly by timestamp.
+- Update the History page UI copy/presentation (English) to clearly reflect add/sell activity and ensure it refreshes automatically after adding or selling (via React Query invalidation/refetch).
+- If new stable state is introduced for backfill bookkeeping, add/adjust Motoko upgrade migration so upgrades preserve existing data and initialize new state safely.
 
-**User-visible outcome:** The History page shows more informative entries for card changes (including card names and absolute timestamps), and card edit-related history clearly lists what fields changed with old/new values.
+**User-visible outcome:** The History page reliably displays understandable Add and Sold entries (with timestamp and card identification) for all cards—past and present—and updates immediately after the user adds a card or marks one as sold.

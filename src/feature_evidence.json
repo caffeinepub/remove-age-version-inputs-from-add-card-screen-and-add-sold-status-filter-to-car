@@ -2,9 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-history-page-ui-to-display-clearer-more-informative-entries-for-changes-to-existing-cards-by-showing-card-names-not-only-ids-wherever-possible-and-by-showing-an-explicit-absolute-date-time-for-each-history-entry-in-addition-to-the-relative-time-already-displayed",
-      "featureTitle": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
+      "featureId": "feature-update-the-history-page-ui-copy-english-and-presentation-so-it-clearly-communicates-that-the-view-shows-add-sell-activity-and-is-correctly-refreshed-after-adding-or-selling-cards",
+      "featureTitle": "Update the History page UI copy (English) and presentation so it clearly communicates that the view shows add/sell activity and is correctly refreshed after adding or selling cards.",
       "files": [
+        "frontend/src/hooks/useQueries.ts",
         "frontend/src/pages/HistoryPage.tsx"
       ],
       "components": [

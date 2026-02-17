@@ -1,21 +1,26 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "History page: show card names and absolute timestamps in change history feed",
+  "title": "Show add & sell events for all cards in History (frontend UI refresh + copy)",
   "requirements": [
     {
       "id": "REQ-3",
-      "summary": "Improve History page entries by resolving card IDs to card names when possible and displaying an absolute timestamp alongside the existing relative time, without changing pagination/infinite-load behavior.",
+      "summary": "Update History page copy/presentation to emphasize add/sell activity and ensure it refreshes after add/sell actions without hard reload.",
       "acceptanceCriteria": [
-        "History list items show card name(s) next to card ID(s) when the card(s) still exist in the user’s collection (fallback to ID-only when not resolvable).",
-        "Each history entry shows an absolute timestamp string in the UI (not only as a hover title), while keeping the existing relative-time display.",
-        "The History page remains paginated/infinite-load as it is now (no regression to loading all entries at once)."
+        "All user-facing text related to the History page remains in English.",
+        "After adding a card or marking a card as sold, the History page shows the corresponding new entry without requiring a hard refresh (React Query invalidation/refetch works).",
+        "History entries for Add and Sold actions are visible and understandable to the user (label + summary + timestamp)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/HistoryPage.tsx",
           "operation": "modify",
-          "description": "Enhance history list rendering to (1) fetch the user’s current cards (via existing query hook) and build a lookup map from cardId -> card name for resolving entry.cardIds to display \"<id> (<name>)\" when available, and (2) render an explicit absolute timestamp string (using existing formatTimestamp) in the visible UI alongside the existing relative time display; keep the existing useGetChangeHistory infinite pagination and 'Load more' behavior unchanged."
+          "description": "Adjust History UI copy to clearly describe add/sell activity (title, subtitle, empty-state messaging) and (optionally) trigger a one-time history backfill when the page is opened, then refetch history so older cards also show relevant activity once backend backfill is available."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a React Query mutation hook (e.g., useBackfillHistoryEntries) that calls the backend backfill capability and invalidates/refetches the changeHistory query key on success; ensure it is safe to call when authenticated and actor is available."
         }
       ]
     }

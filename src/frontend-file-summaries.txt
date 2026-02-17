@@ -1,6 +1,6 @@
 {
   "frontend/src/App.tsx": "Main application component with three-tab layout (Portfolio, Karten, History), early caffeineAdminToken extraction, improved actor initialization error UI, and proper state machine for loading/error/success flows.",
-  "frontend/src/hooks/useQueries.ts": "React Query hooks with optimized caching, now including useGetChangeHistory with infinite pagination support and history invalidation on all card-related mutations (add/update/delete/sell/trade operations).",
+  "frontend/src/hooks/useQueries.ts": "React Query hooks with optimized caching, including useGetChangeHistory with infinite pagination support, useBackfillHistoryEntries mutation for populating history for existing cards, and history invalidation on all card-related mutations (add/update/delete/sell/trade operations).",
   "frontend/src/components/Header.tsx": "Application header with Sorare branding, user greeting, and Internet Identity login/logout button with proper session management and loading indicators.",
   "frontend/src/components/Footer.tsx": "Simple footer with attribution and link to caffeine.ai.",
   "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog for first-time user profile setup that cannot be dismissed until completed.",
@@ -23,5 +23,5 @@
   "frontend/src/utils/urlParams.ts": "URL parameter parsing utilities with enhanced support for extracting secret tokens from both hash-route query format (#/route?param=value) and pure hash query format (#param=value), with automatic sessionStorage persistence and URL cleanup.",
   "frontend/src/hooks/queryKeys.ts": "Centralized query key factory for principal-scoped React Query cache keys, now including changeHistory key for consistent cache management across all user-specific data queries.",
   "frontend/src/utils/formatTimestamp.ts": "Utility functions to format backend Time (nanoseconds as bigint) into readable English timestamps and relative time strings (e.g., \"2 hours ago\").",
-  "frontend/src/pages/HistoryPage.tsx": "History page component that displays a timeline of all user change events with infinite scroll pagination, resolves card IDs to card names when available using a lookup map from the user's current cards, and shows both relative time and absolute timestamps for each entry."
+  "frontend/src/pages/HistoryPage.tsx": "History page component that displays a timeline of card add and sell events with infinite scroll pagination, automatically triggers history backfill on first load for existing cards without history entries, resolves card IDs to card names when available, and shows both relative time and absolute timestamps for each entry with updated copy emphasizing add/sell activity."
 }

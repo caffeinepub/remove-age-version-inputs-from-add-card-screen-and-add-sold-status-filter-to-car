@@ -199,6 +199,7 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addCard(name: string, rarity: string, purchasePrice: number, discountPercent: number, paymentMethod: PaymentMethod, country: string, league: string, club: string, age: bigint, version: string, season: string, position: Position, purchaseDate: Time | null, notes: string, image: ExternalBlob | null): Promise<CardId>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    backfillHistoryEntries(): Promise<void>;
     calculateInvestmentTotals(): Promise<InvestmentTotals>;
     calculateTotalBalance(): Promise<number>;
     calculateTotalInvested(): Promise<number>;
@@ -346,6 +347,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n15(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async backfillHistoryEntries(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.backfillHistoryEntries();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.backfillHistoryEntries();
             return result;
         }
     }

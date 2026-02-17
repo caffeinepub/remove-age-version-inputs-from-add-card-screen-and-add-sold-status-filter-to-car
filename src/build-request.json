@@ -1,72 +1,90 @@
 {
   "kind": "build_request",
-  "title": "Expand change history to fully track edits to existing cards",
+  "title": "Show add & sell events for all cards in History (with backfill for existing cards)",
   "projectName": "Sorare Portfolio",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Enhance backend change-history logging so edits to existing cards are fully traceable: when a card is edited or updated, the stored history entry summary must include which fields changed and the before/after values (for example: “Edited card #12 (Mbappé): purchasePrice 10.0 → 12.5, club PSG → Real Madrid”).",
+      "text": "Backfill change history so that the History page can show an entry for (a) adding a card and (b) selling a card for ALL existing cards, including cards created/sold before the history feature existed. This must be persisted so the backfill does not re-add duplicate entries on subsequent requests.",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Ja bitte genauso"
+          "Die Historie soll das Hinzufügen und Verkauf aller Karten anzeigen. Also was als letztes von den 2 Sachen geändert wurde."
         ]
       },
       "acceptanceCriteria": [
-        "Updating a card via the existing updateCard flow produces a change history entry with action #editCard whose summary lists each changed field with old and new values.",
-        "If no effective field values changed (user submits identical data), the history entry either is not created or clearly indicates 'No changes' (choose one behavior and keep it consistent).",
-        "Existing ChangeHistoryEntry shape remains compatible with the current frontend usage (timestamp/action/cardIds/summary)."
+        "If a user already has cards but their change history is empty or missing entries, fetching change history results includes at least one 'add card' entry for each existing card.",
+        "If a user has cards whose current state indicates they are sold (e.g., transactionType == sold and saleDate/salePrice exist), fetching change history includes a corresponding 'sold' entry for each such card even if the sale happened before history logging existed.",
+        "Backfilled entries are not duplicated across multiple calls to getChangeHistory (or across paging).",
+        "Backfilled entries are ordered correctly by timestamp so the most recent of the two actions (Added vs Sold) appears as the latest event for that card when applicable."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Enhance backend change-history summaries for other existing card modifications so they are self-explanatory and include before/after context where applicable (e.g., sale price changes should record oldSalePrice → newSalePrice; deleting a card should include the last known card name if available; marking as sold should include sale price and sale date/time).",
+      "text": "Ensure history entries for adding and selling a card include a clear, user-readable summary that identifies the card (preferably including both card id and card name).",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Ist es möglich auch die Änderungen der bereits bestehenden Karten in der Historie anzuzeigen?"
+          "Die Historie soll das Hinzufügen und Verkauf aller Karten anzeigen."
         ]
       },
       "acceptanceCriteria": [
-        "updateSalePrice history entries include both the previous and new sale price in the summary when a previous price existed.",
-        "deleteCard history entries include the deleted card’s name in the summary when it can be determined at deletion time.",
-        "markCardAsSold history entries include the sale price and a human-readable sale date/time in the summary (in addition to the entry timestamp)."
+        "Newly created cards generate an add-history entry with a summary that includes the card name and its id.",
+        "Marking a card as sold generates a sold-history entry with a summary that includes the card name and its id."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Update the History page UI to display clearer, more informative entries for changes to existing cards by showing card names (not only IDs) wherever possible and by showing an explicit absolute date/time for each history entry in addition to the relative time already displayed.",
+      "text": "Update the History page UI copy (English) and presentation so it clearly communicates that the view shows add/sell activity and is correctly refreshed after adding or selling cards.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-7"
+          "msg-1"
         ],
         "quotes": [
-          "Ja bitte genauso"
+          "Die Historie soll das Hinzufügen und Verkauf aller Karten anzeigen."
         ]
       },
       "acceptanceCriteria": [
-        "History list items show card name(s) next to card ID(s) when the card(s) still exist in the user’s collection (fallback to ID-only when not resolvable).",
-        "Each history entry shows an absolute timestamp string in the UI (not only as a hover title), while keeping the existing relative-time display.",
-        "The History page remains paginated/infinite-load as it is now (no regression to loading all entries at once)."
+        "All user-facing text related to the History page remains in English.",
+        "After adding a card or marking a card as sold, the History page shows the corresponding new entry without requiring a hard refresh (React Query invalidation/refetch works).",
+        "History entries for Add and Sold actions are visible and understandable to the user (label + summary + timestamp)."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "If the backfill implementation introduces any new stable state fields (e.g., a per-user backfill marker), add/adjust the Motoko upgrade migration so existing canister state upgrades safely without data loss.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Auch die die vor Einbauen der Funktion gemacht wurden sollen angezeigt werden."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Upgrading an existing deployed canister preserves existing cards, profiles, and existing change history entries.",
+        "New state needed for backfill is initialized correctly on upgrade (no traps on first history fetch after upgrade)."
       ]
     }
   ],
   "constraints": [
-    "Do not edit files under frontend/immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
-    "Keep all Motoko backend logic inside the single actor in backend/main.mo; only add migration code if a state upgrade is strictly required."
+    "Backend must remain a single Motoko actor in backend/main.mo (no additional canisters/services).",
+    "Do not modify files under frontend/src/components/ui (Shadcn components are read-only).",
+    "Do not modify immutable frontend hook files listed in SYSTEM_CONTEXT (compose via new code elsewhere if needed)."
   ],
   "nonGoals": [
-    "Adding new third-party services or external databases.",
-    "Real-time updates (WebSockets) for the history feed.",
-    "Translating existing German UI text throughout the app (only the history improvements requested here)."
+    "Do not implement a full field-by-field diff of edits (old value → new value) beyond what is required for add/sell events.",
+    "Do not add third-party auth providers or external databases.",
+    "Do not add real-time updates via WebSockets."
   ],
   "imageRequirements": {
     "required": [],
@@ -75,7 +93,9 @@
   "userProfileUpdate": {
     "goalsToAdd": [],
     "goalsToRemove": [],
-    "preferencesToAdd": [],
+    "preferencesToAdd": [
+      "User-facing text in build requests should be English."
+    ],
     "preferencesToRemove": [],
     "miscToAdd": [],
     "miscToRemove": [],

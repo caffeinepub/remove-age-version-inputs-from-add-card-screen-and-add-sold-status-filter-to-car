@@ -10,6 +10,8 @@ import Nat "mo:core/Nat";
 import Time "mo:core/Time";
 import Text "mo:core/Text";
 import Migration "migration";
+import Blob "mo:core/Blob";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
@@ -114,6 +116,7 @@ actor {
   let cards = Map.empty<Principal, List.List<Card>>();
   let changeHistory = Map.empty<Principal, List.List<ChangeHistoryEntry>>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let backfillMarker = Map.empty<Principal, Bool>();
   var nextCardId = 0;
 
   func getNextCardIdInternal() : CardId {
@@ -758,6 +761,52 @@ actor {
         givenCards,
         "Reverted trade for card: " # cardId.toText(),
       );
+    };
+  };
+
+  public shared ({ caller }) func backfillHistoryEntries() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can backfill their history");
+    };
+
+    if (not backfillMarker.containsKey(caller)) {
+      switch (cards.get(caller)) {
+        case (null) {};
+        case (?userCards) {
+          for (card in userCards.values()) {
+            switch (card.transactionType) {
+              case (#forSale) {
+                logChange(
+                  caller,
+                  #addCard,
+                  [card.id],
+                  "Backfilled: Added card #" # card.id.toText() # " (" # card.name # ")",
+                );
+              };
+              case (#sold) {
+                logChange(
+                  caller,
+                  #addCard,
+                  [card.id],
+                  "Backfilled: Added card #" # card.id.toText() # " (" # card.name # ")",
+                );
+                let salePriceText = switch (card.salePrice) {
+                  case (?price) { price.toText() };
+                  case (null) { "unknown price" };
+                };
+                logChange(
+                  caller,
+                  #markSold,
+                  [card.id],
+                  "Backfilled: Sold card #" # card.id.toText() # " (" # card.name # ") for " # salePriceText,
+                );
+              };
+              case (_) {};
+            };
+          };
+        };
+      };
+      backfillMarker.add(caller, true);
     };
   };
 };

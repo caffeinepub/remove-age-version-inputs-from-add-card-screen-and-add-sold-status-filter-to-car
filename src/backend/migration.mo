@@ -1,15 +1,15 @@
 import Map "mo:core/Map";
 import List "mo:core/List";
-import Nat "mo:core/Nat";
-import Float "mo:core/Float";
-import Time "mo:core/Time";
 import Principal "mo:core/Principal";
-import Storage "blob-storage/Storage";
+import Nat "mo:core/Nat";
+import Blob "mo:core/Blob";
+import Float "mo:core/Float";
+import Text "mo:core/Text";
 
 module {
-  type CardId = Nat;
+  public type CardId = Nat;
 
-  type ChangeAction = {
+  public type ChangeAction = {
     #addCard;
     #editCard;
     #deleteCard;
@@ -19,33 +19,33 @@ module {
     #revertTrade;
   };
 
-  type PaymentMethod = {
+  public type PaymentMethod = {
     #cash;
     #eth;
     #essence;
     #trade;
   };
 
-  type Position = {
+  public type Position = {
     #torwart;
     #verteidiger;
     #mittelfeld;
     #sturm;
   };
 
-  type TransactionType = {
+  public type TransactionType = {
     #forSale;
     #sold;
     #tradedGiven;
     #tradedReceived;
   };
 
-  type TradeTransaction = {
+  public type TradeTransaction = {
     givenCards : [CardId];
     receivedCards : [CardId];
   };
 
-  type Card = {
+  public type Card = {
     id : CardId;
     name : Text;
     rarity : Text;
@@ -63,34 +63,62 @@ module {
     position : Position;
     transactionType : TransactionType;
     tradeReference : ?TradeTransaction;
-    purchaseDate : ?Time.Time;
-    saleDate : ?Time.Time;
+    purchaseDate : ?Int;
+    saleDate : ?Int;
     notes : Text;
-    image : ?Storage.ExternalBlob;
+    image : ?Blob;
   };
 
-  type UserProfile = {
+  public type UserProfile = {
     name : Text;
-    profileImage : ?Storage.ExternalBlob;
+    profileImage : ?Blob;
   };
 
-  type ChangeHistoryEntry = {
-    timestamp : Time.Time;
+  public type InvestmentTotals = {
+    totalCashInvested : Float;
+    totalEthInvested : Float;
+  };
+
+  public type PortfolioSnapshot = {
+    investmentTotals : InvestmentTotals;
+    totalInvested : Float;
+    totalBalance : Float;
+    totalReturns : Float;
+    totalReturnBalance : Float;
+    portfolioTotal : Float;
+    holdBalance : Float;
+    allCards : [Card];
+  };
+
+  public type ChangeHistoryEntry = {
+    timestamp : Int;
     action : ChangeAction;
     cardIds : [CardId];
     summary : Text;
   };
 
-  type OldActor = {
-    cards : Map.Map<Principal, List.List<Card>>;
-    changeHistory : Map.Map<Principal, List.List<ChangeHistoryEntry>>;
-    userProfiles : Map.Map<Principal, UserProfile>;
-    nextCardId : Nat;
+  public type OldActor = {
+    var cards : Map.Map<Principal, List.List<Card>>;
+    var changeHistory : Map.Map<Principal, List.List<ChangeHistoryEntry>>;
+    var userProfiles : Map.Map<Principal, UserProfile>;
+    var nextCardId : Nat;
   };
 
-  type NewActor = OldActor;
+  public type NewActor = {
+    var cards : Map.Map<Principal, List.List<Card>>;
+    var changeHistory : Map.Map<Principal, List.List<ChangeHistoryEntry>>;
+    var userProfiles : Map.Map<Principal, UserProfile>;
+    var nextCardId : Nat;
+    var backfillMarker : Map.Map<Principal, Bool>;
+  };
 
   public func run(old : OldActor) : NewActor {
-    old;
+    {
+      var cards = old.cards;
+      var changeHistory = old.changeHistory;
+      var userProfiles = old.userProfiles;
+      var nextCardId = old.nextCardId;
+      var backfillMarker = Map.empty<Principal, Bool>();
+    };
   };
 };

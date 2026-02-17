@@ -114,6 +114,31 @@ export function useGetChangeHistory() {
   });
 }
 
+export function useBackfillHistoryEntries() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  const { identity } = useInternetIdentity();
+  const principal = identity?.getPrincipal().toString();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      if (!identity) throw new Error('Not logged in');
+      
+      console.log('Backfilling history entries...');
+      return actor.backfillHistoryEntries();
+    },
+    onSuccess: () => {
+      console.log('History backfill completed successfully');
+      queryClient.invalidateQueries({ queryKey: queryKeys.changeHistory(principal) });
+    },
+    onError: (error: Error) => {
+      console.error('Error backfilling history:', error);
+      // Silent error - backfill is a background operation
+    },
+  });
+}
+
 // Card Queries
 // Caching strategy: staleTime 60s to avoid refetch on every tab switch, no refetchOnMount='always'
 export function useGetUserCards() {

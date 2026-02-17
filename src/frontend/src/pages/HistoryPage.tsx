@@ -1,4 +1,4 @@
-import { useGetChangeHistory, useGetUserCards } from '../hooks/useQueries';
+import { useGetChangeHistory, useGetUserCards, useBackfillHistoryEntries } from '../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, History, Plus, Edit, Trash2, DollarSign, ShoppingCart, ArrowLeftRight, RotateCcw, Clock, Calendar } from 'lucide-react';
 import { formatRelativeTime, formatTimestamp } from '../utils/formatTimestamp';
 import { ChangeAction, type CardId } from '../backend';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 
 const actionConfig: Record<ChangeAction, { label: string; icon: React.ComponentType<{ className?: string }>; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   [ChangeAction.addCard]: { label: 'Added', icon: Plus, variant: 'default' },
@@ -26,9 +26,12 @@ export default function HistoryPage() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch,
   } = useGetChangeHistory();
 
   const { data: userCards } = useGetUserCards();
+  const { mutate: backfillHistory } = useBackfillHistoryEntries();
+  const backfillAttempted = useRef(false);
 
   // Build a lookup map from cardId to card name
   const cardNameMap = useMemo(() => {
@@ -53,12 +56,26 @@ export default function HistoryPage() {
   // Flatten all pages into a single array
   const allEntries = data?.pages.flatMap(page => page) ?? [];
 
+  // Trigger backfill on first load if user has cards but no history
+  useEffect(() => {
+    if (!backfillAttempted.current && userCards && userCards.length > 0 && allEntries.length === 0 && !isLoading) {
+      backfillAttempted.current = true;
+      console.log('Triggering history backfill for existing cards...');
+      backfillHistory(undefined, {
+        onSuccess: () => {
+          console.log('Backfill completed, refetching history...');
+          refetch();
+        },
+      });
+    }
+  }, [userCards, allEntries.length, isLoading, backfillHistory, refetch]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="text-center space-y-4">
           <Loader2 className="w-16 h-16 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Loading history...</p>
+          <p className="text-muted-foreground">Loading activity history...</p>
         </div>
       </div>
     );
@@ -78,19 +95,19 @@ export default function HistoryPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <History className="w-6 h-6" />
-            Change History
+            Activity History
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Track all changes to your card collection
+            Track when cards were added to your collection and when they were sold
           </p>
         </CardHeader>
         <CardContent>
           {allEntries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <History className="w-16 h-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No history yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No activity yet</h3>
               <p className="text-muted-foreground max-w-sm">
-                Your activity history will appear here as you add, edit, or manage your cards.
+                Your card activity will appear here. Add cards to your collection or mark them as sold to see your history.
               </p>
             </div>
           ) : (

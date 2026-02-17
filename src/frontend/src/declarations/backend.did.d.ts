@@ -136,6 +136,7 @@ export interface _SERVICE {
     CardId
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'backfillHistoryEntries' : ActorMethod<[], undefined>,
   'calculateInvestmentTotals' : ActorMethod<[], InvestmentTotals>,
   'calculateTotalBalance' : ActorMethod<[], number>,
   'calculateTotalInvested' : ActorMethod<[], number>,

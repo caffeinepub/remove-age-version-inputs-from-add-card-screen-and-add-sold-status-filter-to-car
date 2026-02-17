@@ -106,6 +106,7 @@ export enum UserRole {
 export interface backendInterface {
     addCard(name: string, rarity: string, purchasePrice: number, discountPercent: number, paymentMethod: PaymentMethod, country: string, league: string, club: string, age: bigint, version: string, season: string, position: Position, purchaseDate: Time | null, notes: string, image: ExternalBlob | null): Promise<CardId>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    backfillHistoryEntries(): Promise<void>;
     calculateInvestmentTotals(): Promise<InvestmentTotals>;
     calculateTotalBalance(): Promise<number>;
     calculateTotalInvested(): Promise<number>;
